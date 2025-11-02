@@ -1,6 +1,6 @@
-# UniWork
+# JobNest – a cozy “nest” for all part-time opportunities.
 ## 📱 Overview  
-**UniWork** is a mobile app designed to help Sri Lankan university students easily find part-time job opportunities.  
+**JobNest** is a mobile app designed to help Sri Lankan university students easily find part-time job opportunities.  
 Job owners can post their part-time job details, and students can search, filter, and apply for suitable jobs — all within one app.  
 
 ---
@@ -90,7 +90,7 @@ There is no single, convenient platform that connects job owners with students.
 
 
 
-UniWork – A Part-Time Job Finder App for University Students
+JobNest– A Part-Time Job Finder App for University Students
 
 N.P.Wethum Kawsika - GWU/HICT/2021/12
 D.D.B.Liyanaarachchi - GWU/HICT/2021/26
