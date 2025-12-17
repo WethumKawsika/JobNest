@@ -9,23 +9,21 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -34,9 +32,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.jobnest.main.screens.common.Job
 import com.example.jobnest.main.screens.common.JobListItem
 
@@ -55,33 +55,30 @@ fun HomeScreen(onSwitchView: () -> Unit = {}) {
             ),
             Job("Data Entry Operator", "Rs. 1000/day", "Kandy", "Office Work",
                 "Fast typing skills required.", isSaved = false
+            ),
+            Job("Cashier", "Rs. 950/day", "Nugegoda", "Retail",
+                "Weekend shifts available at local supermarket.", isSaved = false
             )
         )
     }
-    val colorScheme = MaterialTheme.colorScheme
-    val typography = MaterialTheme.typography
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colorScheme.background)
+            .background(MaterialTheme.colorScheme.background)
     ) {
-
-        // HEADER WITH GRADIENT
+        // 1. THE BLUE HEADER (Top Section)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            colorScheme.primary,
-                            colorScheme.secondary
-                        )
-                    )
+                    brush = Brush.verticalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)),
+                    shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
                 )
-                .padding(20.dp)
+                .padding(horizontal = 24.dp, vertical = 24.dp)
         ) {
             Column {
+                // Top Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -89,96 +86,119 @@ fun HomeScreen(onSwitchView: () -> Unit = {}) {
                 ) {
                     Text(
                         text = "Welcome back!",
-                        style = typography.bodyMedium,
-                        color = colorScheme.onPrimary.copy(alpha = 0.9f)
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                     )
-                    TextButton(onClick = onSwitchView) {
-                        Text("Switch to Owner", color = colorScheme.onPrimary)
+                    TextButton(
+                        onClick = onSwitchView,
+                        colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onPrimary)
+                    ) {
+                        Text("Switch to Owner", fontWeight = FontWeight.SemiBold)
                     }
                 }
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(16.dp))
 
+                // Hero Text
                 Text(
                     text = "Find Your Job",
-                    style = typography.headlineLarge,
-                    color = colorScheme.onPrimary
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 30.sp,
+                        letterSpacing = (-0.5).sp
+                    ),
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
+                Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Discover amazing part-time opportunities",
-                    style = typography.bodyLarge,
-                    color = colorScheme.onPrimary.copy(alpha = 0.85f)
+                    text = "Discover amazing part-time opportunities.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
                 )
             }
         }
 
-        // WHITE ROUNDED CARD AREA
-        Card(
+        // 2. CONTENT AREA (Directly below header, no overlap)
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .offset(y = (-24).dp)
-                .shadow(8.dp, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            colors = CardDefaults.cardColors(containerColor = colorScheme.surface)
+                .padding(24.dp)
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
 
-                // SEARCH BAR
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search jobs...") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null)
-                    },
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
+            // Search Bar
+            TextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Search for jobs, roles...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                leadingIcon = {
+                    Icon(Icons.Rounded.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                },
+                shape = RoundedCornerShape(16.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
 
-                Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(24.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            // Filter Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column {
                     Text(
                         text = "Available Jobs",
-                        style = typography.titleLarge,
-                        color = colorScheme.onSurface
-                    )
-
-                    IconButton(
-                        onClick = { /* FILTER SCREEN */ },
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = colorScheme.surfaceVariant
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                    ) {
-                        Icon(Icons.Default.FilterList, contentDescription = "Filter results")
-                    }
+                    )
+                    Text(
+                        text = "${jobs.size} opportunities found",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
                 }
 
-                Text(
-                    text = "${jobs.size} opportunities found",
-                    style = typography.bodyMedium,
-                    color = colorScheme.onSurfaceVariant
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                // JOB LIST
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxSize()
+                IconButton(
+                    onClick = { /* FILTER */ },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    modifier = Modifier.padding(top = 4.dp)
                 ) {
-                    items(jobs) { job ->
-                        JobListItem(job = job, onBookmarkClick = { updatedJob ->
-                            val index = jobs.indexOfFirst { it.title == updatedJob.title }
-                            if (index != -1) {
-                                jobs[index] = updatedJob
-                            }
-                        }) 
-                    }
+                    Icon(Icons.Default.Tune, contentDescription = "Filter results")
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Job List
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(jobs) { job ->
+                    JobListItem(job = job, onBookmarkClick = { updatedJob ->
+                        val index = jobs.indexOfFirst { it.title == updatedJob.title }
+                        if (index != -1) {
+                            jobs[index] = updatedJob
+                        }
+                    })
                 }
             }
         }
