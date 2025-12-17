@@ -56,7 +56,7 @@ fun HomeScreen(onSwitchView: () -> Unit = {}) {
             Job("Data Entry Operator", "Rs. 1000/day", "Kandy", "Office Work",
                 "Fast typing skills required.", isSaved = false
             ),
-            Job("Cashier", "Rs. 950/day", "Nugegoda", "Retail",
+            Job("Cashier", "Rs. 90/day", "Nugegoda", "Retail",
                 "Weekend shifts available at local supermarket.", isSaved = false
             )
         )
