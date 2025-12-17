@@ -47,7 +47,7 @@ fun HomeScreen(onSwitchView: () -> Unit = {}) {
 
     val jobs = remember {
         mutableStateListOf(
-            Job("Part-Time Waiter", "Rs. 800/day", "Colombo 03", "Food Service",
+            Job("Part-Time Waiter", "Rs. 1800/day", "Colombo 03", "Food Service",
                 "Looking for a friendly waiter for evening shifts at a busy restaurant.", isSaved = false
             ),
             Job("Delivery Driver", "Rs. 1200/day", "Galle", "Delivery",
