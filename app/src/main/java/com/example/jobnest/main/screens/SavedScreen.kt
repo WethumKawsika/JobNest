@@ -75,7 +75,7 @@ fun SavedScreen(onSwitchView: () -> Unit = {}) {
                             } else {
                                 savedJobs.removeIf { j -> j.title == it.title } // simple removal for demo
                             }
-                        })
+                        }, onCallClick = {})
                     }
                 }
             }

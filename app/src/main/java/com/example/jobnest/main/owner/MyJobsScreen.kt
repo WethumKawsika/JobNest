@@ -65,7 +65,7 @@ fun MyJobsScreen(onSwitchView: () -> Unit = {}) {
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                     items(myJobs) { job ->
-                        JobListItem(job = job, onBookmarkClick = { /* Not applicable for owner */ })
+                        JobListItem(job = job, onBookmarkClick = { /* Not applicable for owner */ }, onCallClick = {})
                     }
                 }
             }

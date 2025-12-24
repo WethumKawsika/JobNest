@@ -198,6 +198,8 @@ fun HomeScreen(onSwitchView: () -> Unit = {}) {
                         if (index != -1) {
                             jobs[index] = updatedJob
                         }
+                    }, onCallClick = {
+                        // Handle call click
                     })
                 }
             }
