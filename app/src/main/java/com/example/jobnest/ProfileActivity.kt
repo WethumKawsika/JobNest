@@ -1,4 +1,4 @@
-package com.example.jobnest // Change to YOUR package name
+package com.example.jobnest
 
 import android.os.Bundle
 import android.widget.Button
@@ -11,6 +11,7 @@ import com.google.firebase.database.*
 
 class ProfileActivity : AppCompatActivity() {
 
+    private lateinit var toolbar: androidx.appcompat.widget.Toolbar
     private lateinit var profileImage: ImageView
     private lateinit var nameEditText: TextInputEditText
     private lateinit var emailEditText: TextInputEditText
@@ -28,6 +29,7 @@ class ProfileActivity : AppCompatActivity() {
         setContentView(R.layout.activity_profile)
 
         // Initialize views
+        toolbar = findViewById(R.id.toolbar)
         profileImage = findViewById(R.id.profileImage)
         nameEditText = findViewById(R.id.nameEditText)
         emailEditText = findViewById(R.id.emailEditText)
@@ -35,6 +37,11 @@ class ProfileActivity : AppCompatActivity() {
         universityEditText = findViewById(R.id.universityEditText)
         editButton = findViewById(R.id.editButton)
         saveButton = findViewById(R.id.saveButton)
+
+        // Setup toolbar back button
+        toolbar.setNavigationOnClickListener {
+            finish()
+        }
 
         // Initialize Firebase
         auth = FirebaseAuth.getInstance()

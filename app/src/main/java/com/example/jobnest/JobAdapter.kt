@@ -1,4 +1,4 @@
-package com.example.jobnest // Change to YOUR package
+package com.example.jobnest
 
 import android.view.LayoutInflater
 import android.view.View
@@ -20,16 +20,22 @@ class JobAdapter(private val jobList: List<Job>) :
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): JobViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_job, parent, false)
+
+        // Add click effect
+        view.setOnClickListener {
+            // TODO: Open job details
+        }
+
         return JobViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: JobViewHolder, position: Int) {
         val job = jobList[position]
         holder.jobTitle.text = job.title
-        holder.jobType.text = "Type: ${job.type}"
+        holder.jobType.text = job.type
         holder.jobSalary.text = job.salary
-        holder.jobLocation.text = "Location: ${job.location}"
-        holder.jobTime.text = "Time: ${job.time}"
+        holder.jobLocation.text = job.location
+        holder.jobTime.text = job.time
     }
 
     override fun getItemCount() = jobList.size

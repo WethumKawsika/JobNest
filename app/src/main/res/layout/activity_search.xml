@@ -4,17 +4,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5">
+    android:background="@color/background">
 
     <!-- Top Bar -->
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@color/purple_500"
+        android:background="@color/primary"
         android:elevation="4dp"
         app:title="Search Jobs"
-        app:titleTextColor="@android:color/white"
+        app:titleTextColor="@color/white"
         app:layout_constraintTop_toTopOf="parent"/>
 
     <!-- Search Bar -->
@@ -23,7 +23,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:background="@android:color/white"
+        android:background="@color/card_background"
         android:elevation="4dp"
         android:padding="4dp"
         app:layout_constraintTop_toBottomOf="@id/toolbar">
@@ -36,7 +36,7 @@
             android:padding="12dp"
             android:drawableStart="@android:drawable/ic_menu_search"
             android:drawablePadding="8dp"
-            android:background="@android:color/white"/>
+            android:background="@color/card_background"/>
     </LinearLayout>
 
     <!-- Filter Buttons -->
@@ -94,5 +94,53 @@
         android:layout_marginTop="8dp"
         app:layout_constraintTop_toBottomOf="@id/filterScroll"
         app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <!-- Loading Indicator -->
+    <ProgressBar
+        android:id="@+id/loadingIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- Empty State View -->
+    <LinearLayout
+        android:id="@+id/emptyStateView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔍"
+            android:textSize="80sp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No jobs found"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginTop="16dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Try adjusting your filters"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

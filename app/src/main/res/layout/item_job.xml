@@ -1,60 +1,164 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="16dp"
     android:layout_margin="8dp"
-    android:background="@android:color/white"
-    android:elevation="4dp">
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp"
+    app:cardBackgroundColor="@color/white">
 
-    <!-- Job Title -->
-    <TextView
-        android:id="@+id/jobTitle"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Delivery Rider"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="#000000"/>
+        android:orientation="vertical"
+        android:padding="16dp">
 
-    <!-- Job Type -->
-    <TextView
-        android:id="@+id/jobType"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Type: Delivery"
-        android:textSize="14sp"
-        android:layout_marginTop="4dp"/>
+        <!-- Job Title with Icon -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-    <!-- Salary -->
-    <TextView
-        android:id="@+id/jobSalary"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Rs. 1000-2000/day"
-        android:textSize="14sp"
-        android:textColor="#4CAF50"
-        android:textStyle="bold"
-        android:layout_marginTop="4dp"/>
+            <TextView
+                android:id="@+id/jobTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Delivery Rider"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"/>
 
-    <!-- Location -->
-    <TextView
-        android:id="@+id/jobLocation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Location: Colombo"
-        android:textSize="14sp"
-        android:layout_marginTop="4dp"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔥"
+                android:textSize="20sp"/>
+        </LinearLayout>
 
-    <!-- Work Time -->
-    <TextView
-        android:id="@+id/jobTime"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Time: Morning"
-        android:textSize="14sp"
-        android:layout_marginTop="4dp"/>
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@color/divider"/>
 
-</LinearLayout>
+        <!-- Job Type -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="💼"
+                android:textSize="16sp"
+                android:layout_marginEnd="8dp"/>
+
+            <TextView
+                android:id="@+id/jobType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Delivery"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"/>
+        </LinearLayout>
+
+        <!-- Salary with Green Highlight -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp"
+            android:background="@color/primary_light"
+            android:padding="8dp"
+            android:layout_marginStart="-8dp"
+            android:layout_marginEnd="-8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="💰"
+                android:textSize="16sp"
+                android:layout_marginEnd="8dp"/>
+
+            <TextView
+                android:id="@+id/jobSalary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rs. 1000-2000/day"
+                android:textSize="16sp"
+                android:textColor="@color/success"
+                android:textStyle="bold"/>
+        </LinearLayout>
+
+        <!-- Location -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📍"
+                android:textSize="16sp"
+                android:layout_marginEnd="8dp"/>
+
+            <TextView
+                android:id="@+id/jobLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Colombo"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"/>
+        </LinearLayout>
+
+        <!-- Work Time -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🕐"
+                android:textSize="16sp"
+                android:layout_marginEnd="8dp"/>
+
+            <TextView
+                android:id="@+id/jobTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Morning"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"/>
+        </LinearLayout>
+
+        <!-- Apply Button -->
+        <Button
+            android:id="@+id/applyButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Apply Now"
+            android:textColor="@color/white"
+            android:backgroundTint="@color/primary"
+            android:layout_marginTop="12dp"
+            android:textStyle="bold"
+            app:cornerRadius="8dp"/>
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
