@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.database.*
+import android.widget.Toast
 
 class SearchActivity : AppCompatActivity() {
 
@@ -103,24 +104,183 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun setupFilters() {
-        // Filter by salary - will implement later
+        // Filter by salary
         filterSalary.setOnClickListener {
-            // TODO: Show dialog to select salary range
+            showSalaryFilterDialog()
         }
 
         // Filter by type
         filterType.setOnClickListener {
-            // TODO: Show dialog to select job type
+            showJobTypeFilterDialog()
         }
 
         // Filter by location
         filterLocation.setOnClickListener {
-            // TODO: Show dialog to select location
+            showLocationFilterDialog()
         }
 
         // Filter by time
         filterTime.setOnClickListener {
-            // TODO: Show dialog to select time
+            showTimeFilterDialog()
         }
+
+    }
+    private fun showSalaryFilterDialog() {
+        val salaryRanges = arrayOf(
+            "All Salaries",
+            "Rs. 500-1000",
+            "Rs. 1000-2000",
+            "Rs. 2000-3000",
+            "Rs. 3000-5000",
+            "Rs. 5000+"
+        )
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Select Salary Range")
+            .setItems(salaryRanges) { dialog, which ->
+                when (which) {
+                    0 -> filterBySalary(null) // All salaries
+                    1 -> filterBySalary("500-1000")
+                    2 -> filterBySalary("1000-2000")
+                    3 -> filterBySalary("2000-3000")
+                    4 -> filterBySalary("3000-5000")
+                    5 -> filterBySalary("5000+")
+                }
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun filterBySalary(range: String?) {
+        filteredList.clear()
+
+        if (range == null) {
+            // Show all jobs
+            filteredList.addAll(jobList)
+        } else {
+            for (job in jobList) {
+                // Check if job salary contains the range
+                if (job.salary.contains(range, ignoreCase = true)) {
+                    filteredList.add(job)
+                }
+            }
+        }
+
+        jobAdapter.notifyDataSetChanged()
+        Toast.makeText(this, "Filtered by salary: ${range ?: "All"}", Toast.LENGTH_SHORT).show()
+    }
+    private fun showJobTypeFilterDialog() {
+        val jobTypes = arrayOf(
+            "All Types",
+            "Promotion",
+            "Tuition",
+            "Delivery",
+            "Part-time",
+            "Sales",
+            "Other"
+        )
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Select Job Type")
+            .setItems(jobTypes) { dialog, which ->
+                val selectedType = if (which == 0) null else jobTypes[which]
+                filterByJobType(selectedType)
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun filterByJobType(type: String?) {
+        filteredList.clear()
+
+        if (type == null) {
+            // Show all jobs
+            filteredList.addAll(jobList)
+        } else {
+            for (job in jobList) {
+                if (job.type.equals(type, ignoreCase = true)) {
+                    filteredList.add(job)
+                }
+            }
+        }
+
+        jobAdapter.notifyDataSetChanged()
+        Toast.makeText(this, "Filtered by type: ${type ?: "All"}", Toast.LENGTH_SHORT).show()
+    }
+    private fun showLocationFilterDialog() {
+        val locations = arrayOf(
+            "All Locations",
+            "Colombo",
+            "Kandy",
+            "Galle",
+            "Negombo",
+            "Jaffna",
+            "Kurunegala",
+            "Matara",
+            "Anuradhapura"
+        )
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Select Location")
+            .setItems(locations) { dialog, which ->
+                val selectedLocation = if (which == 0) null else locations[which]
+                filterByLocation(selectedLocation)
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun filterByLocation(location: String?) {
+        filteredList.clear()
+
+        if (location == null) {
+            // Show all jobs
+            filteredList.addAll(jobList)
+        } else {
+            for (job in jobList) {
+                if (job.location.contains(location, ignoreCase = true)) {
+                    filteredList.add(job)
+                }
+            }
+        }
+
+        jobAdapter.notifyDataSetChanged()
+        Toast.makeText(this, "Filtered by location: ${location ?: "All"}", Toast.LENGTH_SHORT).show()
+    }
+    private fun showTimeFilterDialog() {
+        val times = arrayOf(
+            "All Times",
+            "Morning",
+            "Evening",
+            "Night",
+            "Flexible"
+        )
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Select Work Time")
+            .setItems(times) { dialog, which ->
+                val selectedTime = if (which == 0) null else times[which]
+                filterByTime(selectedTime)
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun filterByTime(time: String?) {
+        filteredList.clear()
+
+        if (time == null) {
+            // Show all jobs
+            filteredList.addAll(jobList)
+        } else {
+            for (job in jobList) {
+                if (job.time.contains(time, ignoreCase = true)) {
+                    filteredList.add(job)
+                }
+            }
+        }
+
+        jobAdapter.notifyDataSetChanged()
+        Toast.makeText(this, "Filtered by time: ${time ?: "All"}", Toast.LENGTH_SHORT).show()
     }
 }
