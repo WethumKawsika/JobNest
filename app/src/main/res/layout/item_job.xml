@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_margin="8dp"
+    android:background="@android:color/white"
+    android:elevation="4dp">
+
+    <!-- Job Title -->
+    <TextView
+        android:id="@+id/jobTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Delivery Rider"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#000000"/>
+
+    <!-- Job Type -->
+    <TextView
+        android:id="@+id/jobType"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Type: Delivery"
+        android:textSize="14sp"
+        android:layout_marginTop="4dp"/>
+
+    <!-- Salary -->
+    <TextView
+        android:id="@+id/jobSalary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Rs. 1000-2000/day"
+        android:textSize="14sp"
+        android:textColor="#4CAF50"
+        android:textStyle="bold"
+        android:layout_marginTop="4dp"/>
+
+    <!-- Location -->
+    <TextView
+        android:id="@+id/jobLocation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Location: Colombo"
+        android:textSize="14sp"
+        android:layout_marginTop="4dp"/>
+
+    <!-- Work Time -->
+    <TextView
+        android:id="@+id/jobTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Time: Morning"
+        android:textSize="14sp"
+        android:layout_marginTop="4dp"/>
+
+</LinearLayout>
