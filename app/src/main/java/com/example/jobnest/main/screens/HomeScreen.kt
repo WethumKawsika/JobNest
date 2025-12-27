@@ -36,7 +36,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.jobnest.main.screens.common.Job
 import com.example.jobnest.main.screens.common.JobData
 import com.example.jobnest.main.screens.common.JobListItem
 
