@@ -26,15 +26,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.jobnest.main.screens.common.Job
+import com.example.jobnest.main.screens.common.JobData
 import com.example.jobnest.main.screens.common.JobListItem
 
 @Composable
 fun MyJobsScreen(onSwitchView: () -> Unit = {}) {
-    val myJobs = listOf(
-        Job("Part-Time Waiter", "Rs. 800/day", "Colombo 03", "Food Service", "Looking for a friendly waiter for evening shifts at a busy restaurant.", isSaved = true),
-        Job("Delivery Driver", "Rs. 1200/day", "Galle", "Delivery", "Delivery driver needed for morning shifts. Must have own vehicle.", isSaved = false)
-    )
+    val myJobs = JobData.jobs
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(
