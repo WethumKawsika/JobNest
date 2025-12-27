@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.jobnest.main.screens.common.Job
 import com.example.jobnest.main.screens.common.JobData
 import com.example.jobnest.main.screens.common.JobListItem
 
@@ -60,7 +61,7 @@ fun HomeScreen(onSwitchView: () -> Unit = {}) {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             // 1. THE BLUE HEADER (Top Section)
@@ -128,7 +129,7 @@ fun HomeScreen(onSwitchView: () -> Unit = {}) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
-                    .padding(top = 24.dp)
+                    .padding(top = 12.dp)
             ) {
 
                 // Search Bar
@@ -164,7 +165,7 @@ fun HomeScreen(onSwitchView: () -> Unit = {}) {
                     singleLine = true
                 )
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
 
                 // Filter Row
                 Row(
