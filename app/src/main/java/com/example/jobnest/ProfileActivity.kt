@@ -151,7 +151,9 @@ class ProfileActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_saved -> {
-                    Toast.makeText(this, "Saved - Coming Soon", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this, SavedActivity::class.java))
+                    overridePendingTransition(0, 0)
+                    finish()
                     true
                 }
                 R.id.nav_profile -> {
