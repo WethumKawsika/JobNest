@@ -7,6 +7,7 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.Toast
@@ -18,6 +19,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.database.*
 
 class SearchActivity : AppCompatActivity() {
+    private lateinit var clearSearchButton: ImageButton
 
     private lateinit var bottomNavigation: BottomNavigationView
     private lateinit var toolbar: Toolbar
@@ -44,6 +46,7 @@ class SearchActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
 
+
         // Initialize views
         toolbar = findViewById(R.id.toolbar)
         searchEditText = findViewById(R.id.searchEditText)
@@ -55,6 +58,7 @@ class SearchActivity : AppCompatActivity() {
         loadingIndicator = findViewById(R.id.loadingIndicator)
         emptyStateView = findViewById(R.id.emptyStateView)
         bottomNavigation = findViewById(R.id.bottom_navigation)
+        clearSearchButton = findViewById(R.id.clearSearchButton)
 
         // Set current navigation item
         bottomNavigation.selectedItemId = R.id.nav_search
@@ -83,6 +87,25 @@ class SearchActivity : AppCompatActivity() {
 
         // Setup bottom navigation
         setupBottomNavigation()
+    }
+    override fun onCreateOptionsMenu(menu: android.view.Menu?): Boolean {
+        menuInflater.inflate(R.menu.search_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_profile -> {
+                startActivity(Intent(this, ProfileActivity::class.java))
+                true
+            }
+            R.id.action_refresh -> {
+                loadJobs()
+                Toast.makeText(this, "Refreshing jobs...", Toast.LENGTH_SHORT).show()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 
     private fun loadJobs() {
@@ -119,9 +142,17 @@ class SearchActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
 
             override fun afterTextChanged(s: Editable?) {
+                // Show/hide clear button
+                clearSearchButton.visibility = if (s.isNullOrEmpty()) View.GONE else View.VISIBLE
                 applyFilters()
             }
         })
+
+        // Clear button click
+        clearSearchButton.setOnClickListener {
+            searchEditText.text.clear()
+            clearSearchButton = findViewById(R.id.clearSearchButton)
+        }
     }
 
     private fun setupFilters() {
