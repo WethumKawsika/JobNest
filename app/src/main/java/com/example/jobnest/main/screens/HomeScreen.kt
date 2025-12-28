@@ -1,204 +1,274 @@
 package com.example.jobnest.main.screens
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.jobnest.main.screens.common.Job
+import com.example.jobnest.main.screens.common.JobData
 import com.example.jobnest.main.screens.common.JobListItem
 
+// Premium Color Palette
+private val PrimaryBlue = Color(0xFF2E5BFF)
+private val LightBlue = Color(0xFF667EEA)
+private val AccentPurple = Color(0xFF764BA2)
+private val SoftBackground = Color(0xFFF8F9FD)
+
 @Composable
-fun HomeScreen(onSwitchView: () -> Unit = {}) {
+fun HomeScreen(
+    onSwitchView: () -> Unit = {}
+) {
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var jobs by remember { mutableStateOf(JobData.jobs) }
 
-    var searchQuery by remember { mutableStateOf("") }
-
-    val jobs = remember {
-        mutableStateListOf(
-            Job("Part-Time Waiter", "Rs. 800/day", "Colombo 03", "Food Service",
-                "Looking for a friendly waiter for evening shifts at a busy restaurant.", isSaved = false
-            ),
-            Job("Delivery Driver", "Rs. 1200/day", "Galle", "Delivery",
-                "Morning shifts, must have own vehicle.", isSaved = true
-            ),
-            Job("Data Entry Operator", "Rs. 1000/day", "Kandy", "Office Work",
-                "Fast typing skills required.", isSaved = false
-            ),
-            Job("Cashier", "Rs. 950/day", "Nugegoda", "Retail",
-                "Weekend shifts available at local supermarket.", isSaved = false
-            )
-        )
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        // 1. THE BLUE HEADER (Top Section)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.verticalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)),
-                    shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
-                )
-                .padding(horizontal = 24.dp, vertical = 24.dp)
-        ) {
-            Column {
-                // Top Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Welcome back!",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-                    )
-                    TextButton(
-                        onClick = onSwitchView,
-                        colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onPrimary)
-                    ) {
-                        Text("Switch to Owner", fontWeight = FontWeight.SemiBold)
-                    }
+    val filteredJobs by remember {
+        derivedStateOf {
+            if (searchQuery.isBlank()) {
+                jobs
+            } else {
+                jobs.filter {
+                    it.title.contains(searchQuery, ignoreCase = true) ||
+                            it.description.contains(searchQuery, ignoreCase = true)
                 }
-
-                Spacer(Modifier.height(16.dp))
-
-                // Hero Text
-                Text(
-                    text = "Find Your Job",
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 30.sp,
-                        letterSpacing = (-0.5).sp
-                    ),
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "Discover amazing part-time opportunities.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
-                )
             }
         }
+    }
 
-        // 2. CONTENT AREA (Directly below header, no overlap)
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
+    // Animated floating effect
+    val infiniteTransition = rememberInfiniteTransition(label = "float")
+    val floatY by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "floatY"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SoftBackground)
+    ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 24.dp)
         ) {
-
-            // Search Bar
-            TextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Search for jobs, roles...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                leadingIcon = {
-                    Icon(Icons.Rounded.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                },
-                shape = RoundedCornerShape(16.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    disabledContainerColor = MaterialTheme.colorScheme.surface,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent,
-                    cursorColor = MaterialTheme.colorScheme.primary,
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            // Filter Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column {
-                    Text(
-                        text = "Available Jobs",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+            /* ================= ENHANCED HEADER ================= */
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    LightBlue,
+                                    AccentPurple
+                                )
+                            )
                         )
-                    )
-                    Text(
-                        text = "${jobs.size} opportunities found",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-
-                IconButton(
-                    onClick = { /* FILTER */ },
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    modifier = Modifier.padding(top = 4.dp)
                 ) {
-                    Icon(Icons.Default.Tune, contentDescription = "Filter results")
+                    // Floating decorative circles
+                    Box(
+                        modifier = Modifier
+                            .offset(x = (-30).dp, y = 40.dp + floatY.dp)
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.1f))
+                            .blur(30.dp)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 30.dp, y = (-20).dp - floatY.dp)
+                            .size(150.dp)
+                            .clip(CircleShape)
+                            .background(PrimaryBlue.copy(alpha = 0.2f))
+                            .blur(40.dp)
+                    )
+
+                    Column(
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Welcome back!",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = "Find Your Dream Job",
+                                    style = MaterialTheme.typography.headlineMedium.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 28.sp
+                                    ),
+                                    color = Color.White
+                                )
+                            }
+
+                            // Modern Switch Button
+                            Surface(
+                                onClick = onSwitchView,
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color.White.copy(alpha = 0.2f),
+                                contentColor = Color.White
+                            ) {
+                                Text(
+                                    text = "Owner",
+                                    modifier = Modifier.padding(
+                                        horizontal = 16.dp,
+                                        vertical = 10.dp
+                                    ),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(12.dp))
+
+                        Text(
+                            text = "Discover amazing part-time opportunities",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.9f),
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Spacer(Modifier.height(24.dp))
+
+                        // Modern Search Bar
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = {
+                                Text(
+                                    "Search for jobs, roles...",
+                                    color = Color.Gray.copy(alpha = 0.6f)
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Rounded.Search,
+                                    contentDescription = "Search",
+                                    tint = PrimaryBlue
+                                )
+                            },
+                            shape = RoundedCornerShape(20.dp),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                cursorColor = PrimaryBlue
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp),
+                            singleLine = true
+                        )
+                    }
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-
-            // Job List
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(jobs) { job ->
-                    JobListItem(job = job, onBookmarkClick = { updatedJob ->
-                        val index = jobs.indexOfFirst { it.title == updatedJob.title }
-                        if (index != -1) {
-                            jobs[index] = updatedJob
+            /* ================= CONTENT SECTION ================= */
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .padding(top = 24.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Available Jobs",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontSize = 24.sp
+                                ),
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF1A1A1A)
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "${filteredJobs.size} opportunities found",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFF6B7280),
+                                fontWeight = FontWeight.Medium
+                            )
                         }
-                    })
+
+                        // Modern Filter Button
+                        Surface(
+                            onClick = { /* TODO: Filter */ },
+                            shape = RoundedCornerShape(16.dp),
+                            color = PrimaryBlue.copy(alpha = 0.1f),
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    Icons.Default.Tune,
+                                    contentDescription = "Filter",
+                                    tint = PrimaryBlue,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            item { Spacer(Modifier.height(16.dp)) }
+
+            /* ================= JOB LIST ================= */
+            items(
+                items = filteredJobs,
+                key = { job: Job -> job.id }
+            ) { job: Job ->
+                Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+                    JobListItem(
+                        job = job,
+                        onBookmarkClick = { updatedJob ->
+                            jobs = jobs.map { it: Job ->
+                                if (it.id == updatedJob.id) updatedJob else it
+                            }
+                        },
+                        onCallClick = {
+                            // Handle call
+                        }
+                    )
                 }
             }
         }
