@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.CardDefaults
@@ -33,7 +34,7 @@ import androidx.compose.ui.unit.dp
 data class Job(val title: String, val salary: String, val location: String, val workType: String, val description: String, val isSaved: Boolean = false)
 
 @Composable
-fun JobListItem(job: Job, onBookmarkClick: (Job) -> Unit) {
+fun JobListItem(job: Job, onBookmarkClick: (Job) -> Unit, onCallClick: () -> Unit) {
     var isBookmarked by remember { mutableStateOf(job.isSaved) }
 
     OutlinedCard(
@@ -54,15 +55,24 @@ fun JobListItem(job: Job, onBookmarkClick: (Job) -> Unit) {
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
-                IconButton(onClick = {
-                    isBookmarked = !isBookmarked
-                    onBookmarkClick(job.copy(isSaved = isBookmarked))
-                }) {
-                    Icon(
-                        imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                        contentDescription = "Bookmark",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                Row {
+                    IconButton(onClick = {
+                        isBookmarked = !isBookmarked
+                        onBookmarkClick(job.copy(isSaved = isBookmarked))
+                    }) {
+                        Icon(
+                            imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                            contentDescription = "Bookmark",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onCallClick) {
+                        Icon(
+                            imageVector = Icons.Default.Call,
+                            contentDescription = "Call",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))

@@ -1,5 +1,6 @@
 package com.example.jobnest.main
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -102,15 +103,14 @@ fun MainScreen() {
 
         NavHost(
             navController,
-            startDestination = BottomNavItem.Home.route,
-            Modifier.padding(innerPadding)
+            startDestination = BottomNavItem.Home.route
         ) {
             composable(BottomNavItem.Home.route) { HomeScreen(onSwitchView = onSwitchView) }
-            composable(BottomNavItem.Search.route) { SearchScreen(onSwitchView = onSwitchView) }
-            composable(BottomNavItem.Saved.route) { SavedScreen(onSwitchView = onSwitchView) }
-            composable(BottomNavItem.MyJobs.route) { MyJobsScreen(onSwitchView = onSwitchView) }
-            composable(BottomNavItem.PostJob.route) { PostJobScreen(onSwitchView = onSwitchView) }
-            composable(BottomNavItem.Profile.route) { ProfileScreen(onSwitchView = onSwitchView, isOwnerView = isOwnerView) }
+            composable(BottomNavItem.Search.route) { Box(Modifier.padding(innerPadding)) { SearchScreen(onSwitchView = onSwitchView) } }
+            composable(BottomNavItem.Saved.route) { Box(Modifier.padding(innerPadding)) { SavedScreen(onSwitchView = onSwitchView) } }
+            composable(BottomNavItem.MyJobs.route) { Box(Modifier.padding(innerPadding)) { MyJobsScreen(onSwitchView = onSwitchView) } }
+            composable(BottomNavItem.PostJob.route) { Box(Modifier.padding(innerPadding)) { PostJobScreen(onSwitchView = onSwitchView) } }
+            composable(BottomNavItem.Profile.route) { Box(Modifier.padding(innerPadding)) { ProfileScreen(onSwitchView = onSwitchView, isOwnerView = isOwnerView) } }
         }
     }
 }
