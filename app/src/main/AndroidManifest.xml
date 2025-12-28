@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Jobnest">
         <activity
+            android:name=".JobDetailsActivity"
+            android:exported="false" />
+        <activity
             android:name=".SavedActivity"
             android:exported="false" />
         <activity

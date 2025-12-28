@@ -46,9 +46,8 @@ class JobAdapter(private val jobList: List<Job>) :
             updateSaveButtonIcon(holder.saveButton, job.id, context)
         }
 
-        // Handle card click (for future job details)
         holder.itemView.setOnClickListener {
-            Toast.makeText(context, "Job details - Coming soon", Toast.LENGTH_SHORT).show()
+            JobDetailsActivity.start(context, job)
         }
     }
 
