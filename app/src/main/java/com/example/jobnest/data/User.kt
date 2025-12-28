@@ -1,7 +1,5 @@
 package com.example.jobnest.data
 
-import com.google.firebase.firestore.PropertyName
-
 data class User(
     val userId: String = "",
     val email: String = "",

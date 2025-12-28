@@ -58,7 +58,18 @@ fun JobNestApp(modifier: Modifier = Modifier) {
         composable("login") {
             LoginScreen(
                 onSignUpClicked = { navController.navigate("signup") },
-                onLoginSuccess = { navController.navigate("main") }
+                onLoginSuccess = { navController.navigate("main") },
+                onForgotPasswordClicked = { navController.navigate("forgot_password") }
+            )
+        }
+        composable("forgot_password") {
+            ForgotPasswordScreen(
+                onSendClicked = {
+                    navController.navigate("login") {
+                        popUpTo("forgot_password") { inclusive = true }
+                    }
+                },
+                onBackToLoginClicked = { navController.navigateUp() }
             )
         }
         composable("signup") {

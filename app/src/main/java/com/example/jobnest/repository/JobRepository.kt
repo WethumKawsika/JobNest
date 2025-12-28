@@ -2,9 +2,6 @@ package com.example.jobnest.repository
 
 import com.example.jobnest.data.Job
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 
 class JobRepository {
@@ -50,15 +47,16 @@ class JobRepository {
     
     suspend fun getAllJobs(): Result<List<Job>> {
         return try {
+            // Get all active jobs, then sort in memory to avoid index requirement
             val snapshot = jobsCollection
                 .whereEqualTo("isActive", true)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
             
             val jobs = snapshot.documents.mapNotNull { doc ->
                 doc.toObject(Job::class.java)?.copy(jobId = doc.id)
-            }
+            }.sortedByDescending { it.createdAt?.time ?: 0L }
+            
             Result.success(jobs)
         } catch (e: Exception) {
             Result.failure(e)
@@ -67,15 +65,16 @@ class JobRepository {
     
     suspend fun getJobsByOwner(ownerId: String): Result<List<Job>> {
         return try {
+            // Get jobs by owner, then sort in memory to avoid index requirement
             val snapshot = jobsCollection
                 .whereEqualTo("ownerId", ownerId)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
             
             val jobs = snapshot.documents.mapNotNull { doc ->
                 doc.toObject(Job::class.java)?.copy(jobId = doc.id)
-            }
+            }.sortedByDescending { it.createdAt?.time ?: 0L }
+            
             Result.success(jobs)
         } catch (e: Exception) {
             Result.failure(e)
@@ -84,9 +83,9 @@ class JobRepository {
     
     suspend fun searchJobs(query: String): Result<List<Job>> {
         return try {
+            // Get all active jobs, filter by search query, then sort
             val snapshot = jobsCollection
                 .whereEqualTo("isActive", true)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
             
@@ -97,7 +96,8 @@ class JobRepository {
                 job.description.contains(query, ignoreCase = true) ||
                 job.location.contains(query, ignoreCase = true) ||
                 job.company.contains(query, ignoreCase = true)
-            }
+            }.sortedByDescending { it.createdAt?.time ?: 0L }
+            
             Result.success(jobs)
         } catch (e: Exception) {
             Result.failure(e)

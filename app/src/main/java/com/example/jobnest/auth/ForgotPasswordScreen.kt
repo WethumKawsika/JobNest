@@ -18,13 +18,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.LaunchedEffect
+import com.example.jobnest.viewmodel.AuthViewModel
 
 @Composable
 fun ForgotPasswordScreen(
     onSendClicked: (String) -> Unit = {},
-    onBackToLoginClicked: () -> Unit = {}
+    onBackToLoginClicked: () -> Unit = {},
+    viewModel: AuthViewModel = viewModel()
 ) {
     var email by remember { mutableStateOf("") }
+    val authState by viewModel.authState
+    var showSuccess by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -90,12 +96,40 @@ fun ForgotPasswordScreen(
             )
 
             Spacer(modifier = Modifier.height(32.dp))
+            
+            // Error message
+            authState.error?.let { error ->
+                Text(
+                    text = error,
+                    color = Color.Red,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                )
+            }
+            
+            // Success message
+            if (showSuccess && authState.error == null) {
+                Text(
+                    text = "Password reset email sent! Check your inbox.",
+                    color = Color.Green,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { onSendClicked(email) },
+                onClick = {
+                    if (email.isNotBlank()) {
+                        showSuccess = true
+                        viewModel.resetPassword(email)
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
+                enabled = !authState.isLoading,
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Transparent
@@ -113,12 +147,20 @@ fun ForgotPasswordScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Send Reset Link",
+                        text = if (authState.isLoading) "Sending..." else "Send Reset Link",
                         color = Color.White,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
+            
+            LaunchedEffect(showSuccess, authState.error) {
+                if (showSuccess && authState.error == null && !authState.isLoading) {
+                    // Show success message for a bit, then navigate back
+                    kotlinx.coroutines.delay(2000)
+                    onSendClicked(email)
+                }
+            }
             }
 
             TextButton(onClick = onBackToLoginClicked) {
