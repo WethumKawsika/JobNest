@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "123456789",
-    "project_id": "jobnest-dev",
-    "storage_bucket": "jobnest-dev.appspot.com"
+    "project_number": "276499813894",
+    "project_id": "jobnest-217d0",
+    "storage_bucket": "jobnest-217d0.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:123456789:android:abcdef",
+        "mobilesdk_app_id": "1:276499813894:android:4d0099aee4d2bd51965587",
         "android_client_info": {
           "package_name": "com.example.jobnest"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "dummy-key-for-development"
+          "current_key": "AIzaSyBSe9RU-n5LOyvO5SM5qKwrKbCHD_PaN0s"
         }
       ],
       "services": {
@@ -27,4 +27,3 @@
   ],
   "configuration_version": "1"
 }
-
