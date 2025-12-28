@@ -58,7 +58,9 @@
                             android:src="@android:drawable/ic_menu_camera"
                             android:scaleType="centerCrop"
                             android:background="@color/primary_light"
-                            android:contentDescription="Profile picture"/>
+                            android:contentDescription="Profile picture"
+                            android:clickable="true"
+                            android:focusable="true"/>
                     </androidx.cardview.widget.CardView>
 
                     <TextView

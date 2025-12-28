@@ -1,17 +1,31 @@
 package com.example.jobnest
 
+import android.Manifest
+import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
+import android.util.Base64
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.core.content.ContextCompat
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
+import java.io.ByteArrayOutputStream
 
 class ProfileActivity : AppCompatActivity() {
 
@@ -28,6 +42,43 @@ class ProfileActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var database: DatabaseReference
     private var isEditMode = false
+    private var selectedImageBitmap: Bitmap? = null
+
+    // Activity result launchers
+    private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
+        bitmap?.let {
+            selectedImageBitmap = it
+            profileImage.setImageBitmap(it)
+        }
+    }
+
+    private val galleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            try {
+                val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, it)
+                selectedImageBitmap = bitmap
+                profileImage.setImageBitmap(bitmap)
+            } catch (e: Exception) {
+                Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private val cameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            openCamera()
+        } else {
+            Toast.makeText(this, "Camera permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private val storagePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            openGallery()
+        } else {
+            Toast.makeText(this, "Storage permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +110,11 @@ class ProfileActivity : AppCompatActivity() {
         // Load user data
         loadUserData()
 
+        // Setup profile image click
+        profileImage.setOnClickListener {
+            showImagePickerDialog()
+        }
+
         // Setup buttons
         editButton.setOnClickListener {
             enableEditMode()
@@ -72,6 +128,64 @@ class ProfileActivity : AppCompatActivity() {
         setupBottomNavigation()
     }
 
+    private fun showImagePickerDialog() {
+        val options = arrayOf("Take Photo", "Choose from Gallery", "Cancel")
+
+        AlertDialog.Builder(this)
+            .setTitle("Change Profile Picture")
+            .setItems(options) { dialog, which ->
+                when (which) {
+                    0 -> checkCameraPermissionAndOpen()
+                    1 -> checkStoragePermissionAndOpen()
+                    2 -> dialog.dismiss()
+                }
+            }
+            .show()
+    }
+
+    private fun checkCameraPermissionAndOpen() {
+        when {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED -> {
+                openCamera()
+            }
+            else -> {
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        }
+    }
+
+    private fun checkStoragePermissionAndOpen() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13+ uses READ_MEDIA_IMAGES
+            when {
+                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED -> {
+                    openGallery()
+                }
+                else -> {
+                    storagePermissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
+                }
+            }
+        } else {
+            // Older Android versions use READ_EXTERNAL_STORAGE
+            when {
+                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED -> {
+                    openGallery()
+                }
+                else -> {
+                    storagePermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+                }
+            }
+        }
+    }
+
+    private fun openCamera() {
+        cameraLauncher.launch(null)
+    }
+
+    private fun openGallery() {
+        galleryLauncher.launch("image/*")
+    }
+
     private fun loadUserData() {
         val userId = auth.currentUser?.uid ?: return
 
@@ -83,6 +197,9 @@ class ProfileActivity : AppCompatActivity() {
                     emailEditText.setText(user.email)
                     phoneEditText.setText(user.phone)
                     universityEditText.setText(user.university)
+
+                    // Load profile picture from SharedPreferences (local storage)
+                    loadProfilePicture()
                 }
             }
 
@@ -91,6 +208,39 @@ class ProfileActivity : AppCompatActivity() {
                     "Failed to load profile", Toast.LENGTH_SHORT).show()
             }
         })
+    }
+
+    private fun loadProfilePicture() {
+        val prefs = getSharedPreferences("JobNestPrefs", Context.MODE_PRIVATE)
+        val imageString = prefs.getString("profile_picture", null)
+
+        if (imageString != null) {
+            try {
+                val imageBytes = Base64.decode(imageString, Base64.DEFAULT)
+                val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+                profileImage.setImageBitmap(bitmap)
+            } catch (e: Exception) {
+                // Failed to load, keep default image
+            }
+        }
+    }
+
+    private fun saveProfilePicture() {
+        selectedImageBitmap?.let { bitmap ->
+            try {
+                val outputStream = ByteArrayOutputStream()
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+                val imageBytes = outputStream.toByteArray()
+                val imageString = Base64.encodeToString(imageBytes, Base64.DEFAULT)
+
+                val prefs = getSharedPreferences("JobNestPrefs", Context.MODE_PRIVATE)
+                prefs.edit().putString("profile_picture", imageString).apply()
+
+                Toast.makeText(this, "Profile picture updated!", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this, "Failed to save picture", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun enableEditMode() {
@@ -115,10 +265,17 @@ class ProfileActivity : AppCompatActivity() {
             return
         }
 
-        val user = User(name, auth.currentUser?.email ?: "", phone, university)
+        val updates = hashMapOf<String, Any>(
+            "name" to name,
+            "phone" to phone,
+            "university" to university
+        )
 
-        database.child(userId).setValue(user)
+        database.child(userId).updateChildren(updates)
             .addOnSuccessListener {
+                // Save profile picture locally
+                saveProfilePicture()
+
                 Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show()
                 disableEditMode()
             }
@@ -167,7 +324,6 @@ class ProfileActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Ensure correct item is selected when returning to this activity
         bottomNavigation.selectedItemId = R.id.nav_profile
     }
 }
