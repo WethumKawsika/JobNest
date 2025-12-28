@@ -1,41 +1,68 @@
-package com.example.jobnest // This will be YOUR package name
+package com.example.jobnest
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.widget.EditText
+import android.view.View
 import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.database.*
-import android.widget.Toast
 
 class SearchActivity : AppCompatActivity() {
 
+    private lateinit var bottomNavigation: BottomNavigationView
+    private lateinit var toolbar: Toolbar
     private lateinit var searchEditText: EditText
     private lateinit var jobRecyclerView: RecyclerView
     private lateinit var filterSalary: Button
     private lateinit var filterType: Button
     private lateinit var filterLocation: Button
     private lateinit var filterTime: Button
+    private lateinit var loadingIndicator: ProgressBar
+    private lateinit var emptyStateView: LinearLayout
 
     private lateinit var database: DatabaseReference
     private var jobList = mutableListOf<Job>()
     private var filteredList = mutableListOf<Job>()
     private lateinit var jobAdapter: JobAdapter
 
+    private var activeSalaryFilter: String? = null
+    private var activeTypeFilter: String? = null
+    private var activeLocationFilter: String? = null
+    private var activeTimeFilter: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
 
         // Initialize views
+        toolbar = findViewById(R.id.toolbar)
         searchEditText = findViewById(R.id.searchEditText)
         jobRecyclerView = findViewById(R.id.jobRecyclerView)
         filterSalary = findViewById(R.id.filterSalary)
         filterType = findViewById(R.id.filterType)
         filterLocation = findViewById(R.id.filterLocation)
         filterTime = findViewById(R.id.filterTime)
+        loadingIndicator = findViewById(R.id.loadingIndicator)
+        emptyStateView = findViewById(R.id.emptyStateView)
+        bottomNavigation = findViewById(R.id.bottom_navigation)
+
+        // Set current navigation item
+        bottomNavigation.selectedItemId = R.id.nav_search
+
+        // Setup toolbar back button
+        toolbar.setNavigationOnClickListener {
+            finish()
+        }
 
         // Setup RecyclerView
         jobRecyclerView.layoutManager = LinearLayoutManager(this)
@@ -53,9 +80,17 @@ class SearchActivity : AppCompatActivity() {
 
         // Setup filter buttons
         setupFilters()
+
+        // Setup bottom navigation
+        setupBottomNavigation()
     }
 
     private fun loadJobs() {
+        // Show loading
+        loadingIndicator.visibility = View.VISIBLE
+        jobRecyclerView.visibility = View.GONE
+        emptyStateView.visibility = View.GONE
+
         database.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 jobList.clear()
@@ -65,13 +100,15 @@ class SearchActivity : AppCompatActivity() {
                         jobList.add(job)
                     }
                 }
-                filteredList.clear()
-                filteredList.addAll(jobList)
-                jobAdapter.notifyDataSetChanged()
+                applyFilters()
             }
 
             override fun onCancelled(error: DatabaseError) {
-                // Handle error
+                // Hide loading on error
+                loadingIndicator.visibility = View.GONE
+                emptyStateView.visibility = View.VISIBLE
+                Toast.makeText(this@SearchActivity,
+                    "Failed to load jobs", Toast.LENGTH_SHORT).show()
             }
         })
     }
@@ -82,49 +119,51 @@ class SearchActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
 
             override fun afterTextChanged(s: Editable?) {
-                filterJobs(s.toString())
+                applyFilters()
             }
         })
     }
 
-    private fun filterJobs(query: String) {
+    private fun setupFilters() {
+        filterSalary.setOnClickListener { showSalaryFilterDialog() }
+        filterType.setOnClickListener { showJobTypeFilterDialog() }
+        filterLocation.setOnClickListener { showLocationFilterDialog() }
+        filterTime.setOnClickListener { showTimeFilterDialog() }
+    }
+
+    private fun applyFilters() {
+        val query = searchEditText.text.toString()
+
         filteredList.clear()
-        if (query.isEmpty()) {
-            filteredList.addAll(jobList)
-        } else {
-            for (job in jobList) {
-                if (job.title.contains(query, ignoreCase = true) ||
+        for (job in jobList) {
+            val matchesQuery = query.isEmpty() ||
+                    job.title.contains(query, ignoreCase = true) ||
                     job.type.contains(query, ignoreCase = true) ||
-                    job.location.contains(query, ignoreCase = true)) {
-                    filteredList.add(job)
-                }
+                    job.location.contains(query, ignoreCase = true)
+
+            val matchesSalary = activeSalaryFilter == null || job.salary.contains(activeSalaryFilter!!, ignoreCase = true)
+            val matchesType = activeTypeFilter == null || job.type.equals(activeTypeFilter, ignoreCase = true)
+            val matchesLocation = activeLocationFilter == null || job.location.contains(activeLocationFilter!!, ignoreCase = true)
+            val matchesTime = activeTimeFilter == null || job.time.contains(activeTimeFilter!!, ignoreCase = true)
+
+            if (matchesQuery && matchesSalary && matchesType && matchesLocation && matchesTime) {
+                filteredList.add(job)
             }
         }
+
+        // Show/hide empty state and loading indicator
+        loadingIndicator.visibility = View.GONE
+        if (filteredList.isEmpty()) {
+            emptyStateView.visibility = View.VISIBLE
+            jobRecyclerView.visibility = View.GONE
+        } else {
+            emptyStateView.visibility = View.GONE
+            jobRecyclerView.visibility = View.VISIBLE
+        }
+
         jobAdapter.notifyDataSetChanged()
     }
 
-    private fun setupFilters() {
-        // Filter by salary
-        filterSalary.setOnClickListener {
-            showSalaryFilterDialog()
-        }
-
-        // Filter by type
-        filterType.setOnClickListener {
-            showJobTypeFilterDialog()
-        }
-
-        // Filter by location
-        filterLocation.setOnClickListener {
-            showLocationFilterDialog()
-        }
-
-        // Filter by time
-        filterTime.setOnClickListener {
-            showTimeFilterDialog()
-        }
-
-    }
     private fun showSalaryFilterDialog() {
         val salaryRanges = arrayOf(
             "All Salaries",
@@ -138,37 +177,14 @@ class SearchActivity : AppCompatActivity() {
         android.app.AlertDialog.Builder(this)
             .setTitle("Select Salary Range")
             .setItems(salaryRanges) { dialog, which ->
-                when (which) {
-                    0 -> filterBySalary(null) // All salaries
-                    1 -> filterBySalary("500-1000")
-                    2 -> filterBySalary("1000-2000")
-                    3 -> filterBySalary("2000-3000")
-                    4 -> filterBySalary("3000-5000")
-                    5 -> filterBySalary("5000+")
-                }
+                activeSalaryFilter = if (which == 0) null else salaryRanges[which].substring(4)
+                applyFilters()
+                updateFilterButtonStates()
                 dialog.dismiss()
             }
             .show()
     }
 
-    private fun filterBySalary(range: String?) {
-        filteredList.clear()
-
-        if (range == null) {
-            // Show all jobs
-            filteredList.addAll(jobList)
-        } else {
-            for (job in jobList) {
-                // Check if job salary contains the range
-                if (job.salary.contains(range, ignoreCase = true)) {
-                    filteredList.add(job)
-                }
-            }
-        }
-
-        jobAdapter.notifyDataSetChanged()
-        Toast.makeText(this, "Filtered by salary: ${range ?: "All"}", Toast.LENGTH_SHORT).show()
-    }
     private fun showJobTypeFilterDialog() {
         val jobTypes = arrayOf(
             "All Types",
@@ -183,30 +199,14 @@ class SearchActivity : AppCompatActivity() {
         android.app.AlertDialog.Builder(this)
             .setTitle("Select Job Type")
             .setItems(jobTypes) { dialog, which ->
-                val selectedType = if (which == 0) null else jobTypes[which]
-                filterByJobType(selectedType)
+                activeTypeFilter = if (which == 0) null else jobTypes[which]
+                applyFilters()
+                updateFilterButtonStates()
                 dialog.dismiss()
             }
             .show()
     }
 
-    private fun filterByJobType(type: String?) {
-        filteredList.clear()
-
-        if (type == null) {
-            // Show all jobs
-            filteredList.addAll(jobList)
-        } else {
-            for (job in jobList) {
-                if (job.type.equals(type, ignoreCase = true)) {
-                    filteredList.add(job)
-                }
-            }
-        }
-
-        jobAdapter.notifyDataSetChanged()
-        Toast.makeText(this, "Filtered by type: ${type ?: "All"}", Toast.LENGTH_SHORT).show()
-    }
     private fun showLocationFilterDialog() {
         val locations = arrayOf(
             "All Locations",
@@ -223,30 +223,14 @@ class SearchActivity : AppCompatActivity() {
         android.app.AlertDialog.Builder(this)
             .setTitle("Select Location")
             .setItems(locations) { dialog, which ->
-                val selectedLocation = if (which == 0) null else locations[which]
-                filterByLocation(selectedLocation)
+                activeLocationFilter = if (which == 0) null else locations[which]
+                applyFilters()
+                updateFilterButtonStates()
                 dialog.dismiss()
             }
             .show()
     }
 
-    private fun filterByLocation(location: String?) {
-        filteredList.clear()
-
-        if (location == null) {
-            // Show all jobs
-            filteredList.addAll(jobList)
-        } else {
-            for (job in jobList) {
-                if (job.location.contains(location, ignoreCase = true)) {
-                    filteredList.add(job)
-                }
-            }
-        }
-
-        jobAdapter.notifyDataSetChanged()
-        Toast.makeText(this, "Filtered by location: ${location ?: "All"}", Toast.LENGTH_SHORT).show()
-    }
     private fun showTimeFilterDialog() {
         val times = arrayOf(
             "All Times",
@@ -259,28 +243,50 @@ class SearchActivity : AppCompatActivity() {
         android.app.AlertDialog.Builder(this)
             .setTitle("Select Work Time")
             .setItems(times) { dialog, which ->
-                val selectedTime = if (which == 0) null else times[which]
-                filterByTime(selectedTime)
+                activeTimeFilter = if (which == 0) null else times[which]
+                applyFilters()
+                updateFilterButtonStates()
                 dialog.dismiss()
             }
             .show()
     }
 
-    private fun filterByTime(time: String?) {
-        filteredList.clear()
+    private fun updateFilterButtonStates() {
+        filterSalary.isSelected = activeSalaryFilter != null
+        filterType.isSelected = activeTypeFilter != null
+        filterLocation.isSelected = activeLocationFilter != null
+        filterTime.isSelected = activeTimeFilter != null
+    }
 
-        if (time == null) {
-            // Show all jobs
-            filteredList.addAll(jobList)
-        } else {
-            for (job in jobList) {
-                if (job.time.contains(time, ignoreCase = true)) {
-                    filteredList.add(job)
+    private fun setupBottomNavigation() {
+        bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    Toast.makeText(this, "Home - Coming Soon", Toast.LENGTH_SHORT).show()
+                    true
                 }
+                R.id.nav_search -> {
+                    // Already on search screen
+                    true
+                }
+                R.id.nav_saved -> {
+                    Toast.makeText(this, "Saved - Coming Soon", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                R.id.nav_profile -> {
+                    startActivity(Intent(this, ProfileActivity::class.java))
+                    overridePendingTransition(0, 0)
+                    finish()
+                    true
+                }
+                else -> false
             }
         }
+    }
 
-        jobAdapter.notifyDataSetChanged()
-        Toast.makeText(this, "Filtered by time: ${time ?: "All"}", Toast.LENGTH_SHORT).show()
+    override fun onResume() {
+        super.onResume()
+        // Ensure correct item is selected when returning to this activity
+        bottomNavigation.selectedItemId = R.id.nav_search
     }
 }

@@ -3,29 +3,14 @@ package com.example.jobnest
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class JobAdapter(private val jobList: List<Job>) :
-    RecyclerView.Adapter<JobAdapter.JobViewHolder>() {
-
-    class JobViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val jobTitle: TextView = view.findViewById(R.id.jobTitle)
-        val jobType: TextView = view.findViewById(R.id.jobType)
-        val jobSalary: TextView = view.findViewById(R.id.jobSalary)
-        val jobLocation: TextView = view.findViewById(R.id.jobLocation)
-        val jobTime: TextView = view.findViewById(R.id.jobTime)
-    }
+class JobAdapter(private val jobList: List<Job>) : RecyclerView.Adapter<JobAdapter.JobViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): JobViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_job, parent, false)
-
-        // Add click effect
-        view.setOnClickListener {
-            // TODO: Open job details
-        }
-
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_job, parent, false)
         return JobViewHolder(view)
     }
 
@@ -39,4 +24,13 @@ class JobAdapter(private val jobList: List<Job>) :
     }
 
     override fun getItemCount() = jobList.size
+
+    class JobViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val jobTitle: TextView = itemView.findViewById(R.id.jobTitle)
+        val jobType: TextView = itemView.findViewById(R.id.jobType)
+        val jobSalary: TextView = itemView.findViewById(R.id.jobSalary)
+        val jobLocation: TextView = itemView.findViewById(R.id.jobLocation)
+        val jobTime: TextView = itemView.findViewById(R.id.jobTime)
+        val applyButton: Button = itemView.findViewById(R.id.applyButton)
+    }
 }

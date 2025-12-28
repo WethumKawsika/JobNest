@@ -1,17 +1,21 @@
 package com.example.jobnest
 
+import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 
 class ProfileActivity : AppCompatActivity() {
 
-    private lateinit var toolbar: androidx.appcompat.widget.Toolbar
+    private lateinit var toolbar: Toolbar
     private lateinit var profileImage: ImageView
     private lateinit var nameEditText: TextInputEditText
     private lateinit var emailEditText: TextInputEditText
@@ -19,6 +23,7 @@ class ProfileActivity : AppCompatActivity() {
     private lateinit var universityEditText: TextInputEditText
     private lateinit var editButton: Button
     private lateinit var saveButton: Button
+    private lateinit var bottomNavigation: BottomNavigationView
 
     private lateinit var auth: FirebaseAuth
     private lateinit var database: DatabaseReference
@@ -37,6 +42,10 @@ class ProfileActivity : AppCompatActivity() {
         universityEditText = findViewById(R.id.universityEditText)
         editButton = findViewById(R.id.editButton)
         saveButton = findViewById(R.id.saveButton)
+        bottomNavigation = findViewById(R.id.bottom_navigation)
+
+        // Set current navigation item
+        bottomNavigation.selectedItemId = R.id.nav_profile
 
         // Setup toolbar back button
         toolbar.setNavigationOnClickListener {
@@ -58,6 +67,9 @@ class ProfileActivity : AppCompatActivity() {
         saveButton.setOnClickListener {
             saveUserData()
         }
+
+        // Setup bottom navigation
+        setupBottomNavigation()
     }
 
     private fun loadUserData() {
@@ -87,8 +99,8 @@ class ProfileActivity : AppCompatActivity() {
         phoneEditText.isEnabled = true
         universityEditText.isEnabled = true
 
-        editButton.visibility = Button.GONE
-        saveButton.visibility = Button.VISIBLE
+        editButton.visibility = View.GONE
+        saveButton.visibility = View.VISIBLE
     }
 
     private fun saveUserData() {
@@ -103,13 +115,9 @@ class ProfileActivity : AppCompatActivity() {
             return
         }
 
-        val updates = hashMapOf<String, Any>(
-            "name" to name,
-            "phone" to phone,
-            "university" to university
-        )
+        val user = User(name, auth.currentUser?.email ?: "", phone, university)
 
-        database.child(userId).updateChildren(updates)
+        database.child(userId).setValue(user)
             .addOnSuccessListener {
                 Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show()
                 disableEditMode()
@@ -125,7 +133,39 @@ class ProfileActivity : AppCompatActivity() {
         phoneEditText.isEnabled = false
         universityEditText.isEnabled = false
 
-        editButton.visibility = Button.VISIBLE
-        saveButton.visibility = Button.GONE
+        editButton.visibility = View.VISIBLE
+        saveButton.visibility = View.GONE
+    }
+
+    private fun setupBottomNavigation() {
+        bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    Toast.makeText(this, "Home - Coming Soon", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                R.id.nav_search -> {
+                    startActivity(Intent(this, SearchActivity::class.java))
+                    overridePendingTransition(0, 0)
+                    finish()
+                    true
+                }
+                R.id.nav_saved -> {
+                    Toast.makeText(this, "Saved - Coming Soon", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                R.id.nav_profile -> {
+                    // Already on profile screen
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Ensure correct item is selected when returning to this activity
+        bottomNavigation.selectedItemId = R.id.nav_profile
     }
 }

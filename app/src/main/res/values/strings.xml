@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">jobnest</string>
+    <string name="profile_picture_description">User profile picture</string>
+    <string name="student_profile_emoji">👤 Student Profile</string>
+    <string name="personal_information">Personal Information</string>
+    <string name="full_name_emoji">👤 Full Name</string>
+    <string name="email_emoji">📧 Email</string>
+    <string name="phone_number_emoji">📱 Phone Number</string>
+    <string name="university_emoji">🎓 University</string>
+    <string name="edit_profile_emoji">✏️ Edit Profile</string>
+    <string name="save_changes_emoji">💾 Save Changes</string>
 </resources>
