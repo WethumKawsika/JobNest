@@ -30,6 +30,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -45,17 +47,32 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.jobnest.R
 import com.example.jobnest.ui.theme.LightBlue
 import com.example.jobnest.ui.theme.PrimaryBlue
+import com.example.jobnest.viewmodel.AuthViewModel
 
 @Composable
-fun SignUpScreen(onSignInClicked: () -> Unit = {}) {
+fun SignUpScreen(
+    onSignInClicked: () -> Unit = {},
+    onSignUpSuccess: () -> Unit = {},
+    viewModel: AuthViewModel = viewModel()
+) {
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var userType by remember { mutableStateOf("Student") } // Can be "Student" or "Job Owner"
+    
+    val authState by viewModel.authState
+    val context = LocalContext.current
+    
+    LaunchedEffect(authState.isAuthenticated) {
+        if (authState.isAuthenticated) {
+            onSignUpSuccess()
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -145,12 +162,32 @@ fun SignUpScreen(onSignInClicked: () -> Unit = {}) {
                             Text("Job Owner", color = if (userType == "Job Owner") Color.White else Color.Black)
                         }
                     }
+                    // Error message
+                    authState.error?.let { error ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = error,
+                            color = Color.Red,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                    }
+                    
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
-                        onClick = { /* TODO: Handle create account */ },
-                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                        onClick = {
+                            if (password == confirmPassword && password.isNotBlank() && email.isNotBlank() && fullName.isNotBlank()) {
+                                viewModel.signUp(email, password, fullName, userType)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        enabled = !authState.isLoading
                     ) {
-                        Text("Create Account", fontSize = 16.sp)
+                        if (authState.isLoading) {
+                            Text("Creating...", fontSize = 16.sp)
+                        } else {
+                            Text("Create Account", fontSize = 16.sp)
+                        }
                     }
                 }
             }

@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -22,9 +23,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.LaunchedEffect
 import com.example.jobnest.main.screens.common.Job
-import com.example.jobnest.main.screens.common.JobData
 import com.example.jobnest.main.screens.common.JobListItem
+import com.example.jobnest.utils.toUIJob
+import com.example.jobnest.viewmodel.JobViewModel
 
 // Premium Color Palette
 private val PrimaryBlue = Color(0xFF2E5BFF)
@@ -34,22 +38,28 @@ private val SoftBackground = Color(0xFFF8F9FD)
 
 @Composable
 fun HomeScreen(
-    onSwitchView: () -> Unit = {}
+    onSwitchView: () -> Unit = {},
+    viewModel: JobViewModel = viewModel()
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    var jobs by remember { mutableStateOf(JobData.jobs) }
-
-    val filteredJobs by remember {
-        derivedStateOf {
-            if (searchQuery.isBlank()) {
-                jobs
-            } else {
-                jobs.filter {
-                    it.title.contains(searchQuery, ignoreCase = true) ||
-                            it.description.contains(searchQuery, ignoreCase = true)
-                }
-            }
+    val jobState by viewModel.jobState
+    
+    // Load jobs on first launch
+    LaunchedEffect(Unit) {
+        viewModel.loadJobs()
+    }
+    
+    // Search jobs when query changes
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isBlank()) {
+            viewModel.loadJobs()
+        } else {
+            viewModel.searchJobs(searchQuery)
         }
+    }
+
+    val filteredJobs = jobState.jobs.map { job ->
+        job.toUIJob(isBookmarked = jobState.savedJobIds.contains(job.jobId))
     }
 
     // Animated floating effect
@@ -253,22 +263,36 @@ fun HomeScreen(
             item { Spacer(Modifier.height(16.dp)) }
 
             /* ================= JOB LIST ================= */
-            items(
-                items = filteredJobs,
-                key = { job: Job -> job.id }
-            ) { job: Job ->
-                Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
-                    JobListItem(
-                        job = job,
-                        onBookmarkClick = { updatedJob ->
-                            jobs = jobs.map { it: Job ->
-                                if (it.id == updatedJob.id) updatedJob else it
+            if (jobState.isLoading && filteredJobs.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+            } else {
+                items(
+                    items = filteredJobs,
+                    key = { job: Job -> job.id }
+                ) { job: Job ->
+                    Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+                        JobListItem(
+                            job = job,
+                            onBookmarkClick = { updatedJob ->
+                                val backendJob = jobState.jobs.find { it.jobId == updatedJob.id }
+                                backendJob?.let {
+                                    viewModel.toggleSaveJob(it.jobId)
+                                }
+                            },
+                            onCallClick = {
+                                // Handle call
                             }
-                        },
-                        onCallClick = {
-                            // Handle call
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }

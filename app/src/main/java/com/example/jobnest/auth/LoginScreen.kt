@@ -34,6 +34,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.jobnest.viewmodel.AuthViewModel
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 
 // Premium Color Palette
 private val PrimaryBlue = Color(0xFF2E5BFF)
@@ -48,12 +52,20 @@ private val CardWhite = Color(0xFFFFFFFF)
 fun LoginScreen(
     onSignUpClicked: () -> Unit = {},
     onLoginSuccess: () -> Unit = {},
-    onForgotPasswordClicked: () -> Unit = {}
+    onForgotPasswordClicked: () -> Unit = {},
+    viewModel: AuthViewModel = viewModel()
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
+    val authState by viewModel.authState
+    
+    LaunchedEffect(authState.isAuthenticated) {
+        if (authState.isAuthenticated) {
+            onLoginSuccess()
+        }
+    }
 
     // Animated floating effect
     val infiniteTransition = rememberInfiniteTransition(label = "float")
@@ -264,12 +276,30 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
+                    // Error message
+                    authState.error?.let { error ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = error,
+                            color = Color.Red,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
                     // Sign In Button with gradient
                     Button(
-                        onClick = onLoginSuccess,
+                        onClick = {
+                            if (email.isNotBlank() && password.isNotBlank()) {
+                                viewModel.signIn(email, password)
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
+                        enabled = !authState.isLoading
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.Transparent
@@ -291,7 +321,7 @@ fun LoginScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                "Sign In",
+                                if (authState.isLoading) "Signing In..." else "Sign In",
                                 color = Color.White,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold

@@ -24,6 +24,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.LaunchedEffect
+import com.example.jobnest.data.Job
+import com.example.jobnest.viewmodel.JobViewModel
 
 // Premium Color Palette
 private val PrimaryBlue = Color(0xFF2E5BFF)
@@ -35,7 +39,8 @@ private val SoftBackground = Color(0xFFF8F9FD)
 @Composable
 fun PostJobScreen(
     onBackPressed: () -> Unit = {},
-    onPostJob: () -> Unit = {}
+    onPostJob: () -> Unit = {},
+    viewModel: JobViewModel = viewModel()
 ) {
     var jobTitle by remember { mutableStateOf("") }
     var company by remember { mutableStateOf("") }
@@ -60,6 +65,20 @@ fun PostJobScreen(
 
     var genderExpanded by remember { mutableStateOf(false) }
     var selectedGender by remember { mutableStateOf("Select gender preference") }
+    
+    val jobState by viewModel.jobState
+    var showSuccess by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        viewModel.clearError()
+    }
+    
+    LaunchedEffect(jobState.isLoading, jobState.error) {
+        if (!jobState.isLoading && jobState.error == null && showSuccess) {
+            onPostJob()
+            showSuccess = false
+        }
+    }
 
     val workTypes = listOf("Promotion", "Tuition", "Delivery", "Food Service", "Office Work", "Retail", "Other")
     val workTimes = listOf("Morning", "Afternoon", "Evening", "Night", "Flexible")
@@ -470,12 +489,50 @@ fun PostJobScreen(
 
                     Spacer(modifier = Modifier.height(28.dp))
 
+                    // Error message
+                    jobState.error?.let { error ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = error,
+                            color = Color.Red,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(28.dp))
+                    
                     // Post Job Button
                     Button(
-                        onClick = onPostJob,
+                        onClick = {
+                            if (validateFields(
+                                jobTitle, company, minSalary, maxSalary,
+                                location, selectedWorkType, selectedWorkTime,
+                                selectedFood, selectedTransport, requiredPersons
+                            )) {
+                                val job = Job(
+                                    title = jobTitle,
+                                    description = description,
+                                    company = company,
+                                    location = location,
+                                    minSalary = minSalary.toIntOrNull() ?: 0,
+                                    maxSalary = maxSalary.toIntOrNull() ?: 0,
+                                    workType = selectedWorkType,
+                                    food = selectedFood,
+                                    transport = selectedTransport,
+                                    workTime = selectedWorkTime,
+                                    requiredPersons = requiredPersons.toIntOrNull() ?: 1,
+                                    genderPreference = selectedGender,
+                                    ageLimit = ageLimit.takeIf { it.isNotBlank() }
+                                )
+                                showSuccess = true
+                                viewModel.createJob(job)
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
+                        enabled = !jobState.isLoading
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.Transparent
@@ -505,7 +562,7 @@ fun PostJobScreen(
                                     modifier = Modifier.size(22.dp)
                                 )
                                 Text(
-                                    "Post Job",
+                                    if (jobState.isLoading) "Posting..." else "Post Job",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
@@ -647,6 +704,29 @@ fun DropdownField(
             }
         }
     }
+}
+
+private fun validateFields(
+    jobTitle: String,
+    company: String,
+    minSalary: String,
+    maxSalary: String,
+    location: String,
+    workType: String,
+    workTime: String,
+    food: String,
+    transport: String,
+    requiredPersons: String
+): Boolean {
+    return jobTitle.isNotBlank() &&
+            company.isNotBlank() &&
+            minSalary.isNotBlank() &&
+            location.isNotBlank() &&
+            workType != "Select work type" &&
+            workTime != "Select work time" &&
+            food != "Select food availability" &&
+            transport != "Select transport" &&
+            requiredPersons.isNotBlank()
 }
 
 @Preview(showBackground = true)
