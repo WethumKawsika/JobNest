@@ -16,6 +16,7 @@ import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 
 class SearchActivity : AppCompatActivity() {
@@ -49,6 +50,7 @@ class SearchActivity : AppCompatActivity() {
 
         // Initialize views
         toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar) // Set the toolbar as the action bar
         searchEditText = findViewById(R.id.searchEditText)
         jobRecyclerView = findViewById(R.id.jobRecyclerView)
         filterSalary = findViewById(R.id.filterSalary)
@@ -109,6 +111,9 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun loadJobs() {
+        // Auto-login for demo (remove this in production!)
+        FirebaseAuth.getInstance().signInAnonymously()
+
         // Show loading
         loadingIndicator.visibility = View.VISIBLE
         jobRecyclerView.visibility = View.GONE
@@ -151,7 +156,6 @@ class SearchActivity : AppCompatActivity() {
         // Clear button click
         clearSearchButton.setOnClickListener {
             searchEditText.text.clear()
-            clearSearchButton = findViewById(R.id.clearSearchButton)
         }
     }
 
