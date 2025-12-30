@@ -12,7 +12,20 @@
           "package_name": "com.example.jobnest"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "276499813894-vtl9e50hmdbhsjbqtu1kg9is84ikvmqr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.jobnest",
+            "certificate_hash": "f25c825c8ac465543154b752de483147b2009175"
+          }
+        },
+        {
+          "client_id": "276499813894-2kh4hrvok22m5c27a3pklt5msavp3qit.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBSe9RU-n5LOyvO5SM5qKwrKbCHD_PaN0s"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "276499813894-2kh4hrvok22m5c27a3pklt5msavp3qit.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

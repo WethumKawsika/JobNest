@@ -1,4 +1,5 @@
 package com.example.jobnest.main.screens.common
+import com.example.jobnest.model.Job // <-- Add this import
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*

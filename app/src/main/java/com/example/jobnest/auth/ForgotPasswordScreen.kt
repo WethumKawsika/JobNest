@@ -19,7 +19,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.LaunchedEffect
 import com.example.jobnest.viewmodel.AuthViewModel
 
 @Composable
@@ -29,7 +28,7 @@ fun ForgotPasswordScreen(
     viewModel: AuthViewModel = viewModel()
 ) {
     var email by remember { mutableStateOf("") }
-    val authState by viewModel.authState
+    val authState by viewModel.authState.collectAsState()
     var showSuccess by remember { mutableStateOf(false) }
 
     Box(
@@ -96,7 +95,7 @@ fun ForgotPasswordScreen(
             )
 
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             // Error message
             authState.error?.let { error ->
                 Text(
@@ -106,7 +105,7 @@ fun ForgotPasswordScreen(
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
                 )
             }
-            
+
             // Success message
             if (showSuccess && authState.error == null) {
                 Text(
@@ -153,14 +152,14 @@ fun ForgotPasswordScreen(
                         fontWeight = FontWeight.Bold
                     )
                 }
-            
+            }
+
             LaunchedEffect(showSuccess, authState.error) {
                 if (showSuccess && authState.error == null && !authState.isLoading) {
                     // Show success message for a bit, then navigate back
                     kotlinx.coroutines.delay(2000)
                     onSendClicked(email)
                 }
-            }
             }
 
             TextButton(onClick = onBackToLoginClicked) {

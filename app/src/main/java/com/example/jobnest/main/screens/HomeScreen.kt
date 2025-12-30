@@ -23,8 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.jobnest.main.screens.common.Job
 import com.example.jobnest.main.screens.common.JobListItem
+import com.example.jobnest.main.screens.common.JobUI
 import com.example.jobnest.utils.toUIJob
 import com.example.jobnest.viewmodel.JobViewModel
 
@@ -40,13 +40,13 @@ fun HomeScreen(
     viewModel: JobViewModel = viewModel()
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    val jobState by viewModel.jobState
-    
-    // Load jobs on first launch
+    val jobState by viewModel.jobState.collectAsState()
+
+    // Load ALL jobs from ALL users on first launch
     LaunchedEffect(Unit) {
         viewModel.loadJobs()
     }
-    
+
     // Search jobs when query changes
     LaunchedEffect(searchQuery) {
         if (searchQuery.isBlank()) {
@@ -56,7 +56,7 @@ fun HomeScreen(
         }
     }
 
-    val filteredJobs = jobState.jobs.map { job ->
+    val filteredJobs: List<JobUI> = jobState.jobs.map { job ->
         job.toUIJob(isBookmarked = jobState.savedJobIds.contains(job.jobId))
     }
 
@@ -88,10 +88,7 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .background(
                             brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    LightBlue,
-                                    AccentPurple
-                                )
+                                colors = listOf(LightBlue, AccentPurple)
                             )
                         )
                 ) {
@@ -114,9 +111,7 @@ fun HomeScreen(
                             .blur(40.dp)
                     )
 
-                    Column(
-                        modifier = Modifier.padding(24.dp)
-                    ) {
+                    Column(modifier = Modifier.padding(24.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -149,10 +144,7 @@ fun HomeScreen(
                             ) {
                                 Text(
                                     text = "Owner",
-                                    modifier = Modifier.padding(
-                                        horizontal = 16.dp,
-                                        vertical = 10.dp
-                                    ),
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp
                                 )
@@ -162,7 +154,7 @@ fun HomeScreen(
                         Spacer(Modifier.height(12.dp))
 
                         Text(
-                            text = "Discover amazing part-time opportunities",
+                            text = "Discover amazing part-time opportunities from various companies",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.White.copy(alpha = 0.9f),
                             fontWeight = FontWeight.Medium
@@ -267,28 +259,54 @@ fun HomeScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(32.dp),
-                        contentAlignment = androidx.compose.ui.Alignment.Center
+                        contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator()
+                    }
+                }
+            } else if (filteredJobs.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No jobs available",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.Gray
+                        )
                     }
                 }
             } else {
                 items(
                     items = filteredJobs,
-                    key = { job: Job -> job.id }
-                ) { job: Job ->
+                    key = { it.id }
+                ) { job ->
                     Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
                         JobListItem(
                             job = job,
-                            onBookmarkClick = { updatedJob ->
-                                val backendJob = jobState.jobs.find { it.jobId == updatedJob.id }
-                                backendJob?.let {
-                                    viewModel.toggleSaveJob(it.jobId)
-                                }
-                            },
-                            onCallClick = {
-                                // Handle call
-                            }
+                            onBookmarkClick = { viewModel.toggleBookmark(job.id) },
+                            onCallClick = { /* Handle calling the owner */ }
+                        )
+                    }
+                }
+            }
+
+            // Error message
+            jobState.error?.let { error ->
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = error,
+                            color = Color.Red,
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }

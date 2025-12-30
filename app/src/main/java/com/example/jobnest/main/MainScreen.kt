@@ -22,17 +22,18 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import com.example.jobnest.main.owner.MyJobsScreen
-import com.example.jobnest.main.owner.PostJobScreen
 import com.example.jobnest.main.screens.HomeScreen
 import com.example.jobnest.main.screens.ProfileScreen
 import com.example.jobnest.main.screens.SavedScreen
 import com.example.jobnest.main.screens.SearchScreen
-import com.example.jobnest.main.screens.common.EditProfileScreen
+import com.example.jobnest.viewmodel.AuthViewModel
+import com.example.jobnest.viewmodel.JobViewModel
 
 /* ---------------- COLORS ---------------- */
 
@@ -55,60 +56,139 @@ sealed class BottomNavItem(
     object Profile : BottomNavItem("profile", Icons.Default.Person, "Profile")
 }
 
-const val EDIT_PROFILE_ROUTE = "edit_profile"
-
 /* ---------------- MAIN SCREEN ---------------- */
 
 @Composable
-fun MainScreen() {
-    val navController = rememberNavController()
-    var isOwnerView by remember { mutableStateOf(false) }
+fun MainScreen(
+    initialUserType: String? = null,
+    onNavigateToPostJob: () -> Unit,
+    onNavigateToEditProfile: () -> Unit,
+    onLogout: () -> Unit,
+    refreshTrigger: Int = 0,
+    authViewModel: AuthViewModel = viewModel()
+) {
+    val authState by authViewModel.authState.collectAsState()
+    val jobViewModel: JobViewModel = viewModel()
 
-    val studentItems = listOf(
-        BottomNavItem.Home,
-        BottomNavItem.Search,
-        BottomNavItem.Saved,
-        BottomNavItem.Profile
-    )
+    val shouldShowOwnerView = remember(initialUserType, authState.currentUserData?.userType) {
+        initialUserType == "owner" || authState.currentUserData?.userType == "owner"
+    }
 
-    val ownerItems = listOf(
-        BottomNavItem.MyJobs,
-        BottomNavItem.PostJob,
-        BottomNavItem.Profile
-    )
+    var currentView by remember(shouldShowOwnerView) {
+        mutableStateOf(if (shouldShowOwnerView) "owner" else "student")
+    }
+    var selectedTab by remember { mutableStateOf(0) }
 
     Scaffold(
         bottomBar = {
-            GlassFloatingNavBar(
-                items = if (isOwnerView) ownerItems else studentItems,
-                navController = navController
-            )
-        }
-    ) { padding ->
-        val onSwitchView = {
-            isOwnerView = !isOwnerView
-            val newStartRoute = if (isOwnerView) BottomNavItem.MyJobs.route else BottomNavItem.Home.route
-            navController.navigate(newStartRoute) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
+            if (currentView == "student") {
+                NavigationBar {
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                        label = { Text("Home") },
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 }
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Bookmark, contentDescription = "Saved") },
+                        label = { Text("Saved") },
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 }
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                        label = { Text("Search") },
+                        selected = selectedTab == 2,
+                        onClick = { selectedTab = 2 }
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
+                        label = { Text("Profile") },
+                        selected = selectedTab == 3,
+                        onClick = { selectedTab = 3 }
+                    )
                 }
-                launchSingleTop = true
-                restoreState = true
+            } else {
+                NavigationBar {
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Work, contentDescription = "My Jobs") },
+                        label = { Text("My Jobs") },
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 }
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.AddCircle, contentDescription = "Post Job") },
+                        label = { Text("Post Job") },
+                        selected = false,
+                        onClick = { onNavigateToPostJob() }
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
+                        label = { Text("Profile") },
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 }
+                    )
+                }
             }
         }
-
-        NavHost(
-            navController = navController,
-            startDestination = BottomNavItem.Home.route,
-            modifier = Modifier.padding(padding)
-        ) {
-            composable(BottomNavItem.Home.route) { HomeScreen(onSwitchView = onSwitchView) }
-            composable(BottomNavItem.Search.route) { SearchScreen() }
-            composable(BottomNavItem.Saved.route) { SavedScreen(onSwitchView = onSwitchView) }
-            composable(BottomNavItem.MyJobs.route) { MyJobsScreen(onSwitchView = onSwitchView, onPostJob = { navController.navigate(BottomNavItem.PostJob.route) }) }
-            composable(BottomNavItem.PostJob.route) { PostJobScreen(onBackPressed = { navController.navigateUp() }, onPostJob = { navController.navigateUp() }) }
-            composable(BottomNavItem.Profile.route) { ProfileScreen(onSwitchView = onSwitchView, isOwnerView = isOwnerView, navController = navController) }
-            composable(EDIT_PROFILE_ROUTE) { EditProfileScreen(navController = navController, onSaveProfile = { navController.navigateUp() }) }
+    ) { paddingValues ->
+        Box(modifier = Modifier.padding(paddingValues)) {
+            when (currentView) {
+                "student" -> {
+                    when (selectedTab) {
+                        0 -> HomeScreen(
+                            onSwitchView = {
+                                currentView = "owner"
+                                selectedTab = 0
+                            }
+                        )
+                        1 -> SavedScreen(
+                            onSwitchView = {
+                                currentView = "owner"
+                                selectedTab = 0
+                            }
+                        )
+                        2 -> SearchScreen(
+                            onBackClick = { selectedTab = 0 },
+                            onSwitchView = {
+                                currentView = "owner"
+                                selectedTab = 0
+                            }
+                        )
+                        3 -> ProfileScreen(
+                            onSwitchView = {
+                                currentView = "owner"
+                                selectedTab = 0
+                            },
+                            isOwnerView = false,
+                            onNavigateToEditProfile = onNavigateToEditProfile,
+                            onLogout = onLogout
+                        )
+                    }
+                }
+                "owner" -> {
+                    when (selectedTab) {
+                        0 -> {
+                            MyJobsScreen(
+                                onSwitchView = {
+                                    currentView = "student"
+                                    selectedTab = 0
+                                },
+                                refreshTrigger = refreshTrigger
+                            )
+                        }
+                        1 -> ProfileScreen(
+                            onSwitchView = {
+                                currentView = "student"
+                                selectedTab = 0
+                            },
+                            isOwnerView = true,
+                            onNavigateToEditProfile = onNavigateToEditProfile,
+                            onLogout = onLogout
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -118,7 +198,8 @@ fun MainScreen() {
 @Composable
 fun GlassFloatingNavBar(
     items: List<BottomNavItem>,
-    navController: NavHostController
+    navController: NavHostController,
+    onNavigateToPostJob: () -> Unit
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -153,9 +234,13 @@ fun GlassFloatingNavBar(
                         item = item,
                         selected = selected
                     ) {
-                        navController.navigate(item.route) {
-                            popUpTo(navController.graph.findStartDestination().id)
-                            launchSingleTop = true
+                        if (item.route == BottomNavItem.PostJob.route) {
+                            onNavigateToPostJob()
+                        } else {
+                            navController.navigate(item.route) {
+                                popUpTo(navController.graph.findStartDestination().id)
+                                launchSingleTop = true
+                            }
                         }
                     }
                 }
@@ -197,8 +282,7 @@ fun GlassNavItem(
                         Brush.linearGradient(
                             colors = listOf(Color.Transparent, Color.Transparent)
                         )
-                )
-            ,
+                ),
             contentAlignment = Alignment.Center
         ) {
             Icon(

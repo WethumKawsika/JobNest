@@ -22,12 +22,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.example.jobnest.main.EDIT_PROFILE_ROUTE
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.jobnest.viewmodel.AuthViewModel
 
 // Premium Color Palette
 private val PrimaryBlue = Color(0xFF2E5BFF)
@@ -39,8 +37,14 @@ private val SoftBackground = Color(0xFFF8F9FD)
 fun ProfileScreen(
     onSwitchView: () -> Unit = {},
     isOwnerView: Boolean = false,
-    navController: NavController
+    onNavigateToEditProfile: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    viewModel: AuthViewModel = viewModel()
 ) {
+    var showLogoutDialog by remember { mutableStateOf(false) }
+    val authState by viewModel.authState.collectAsState()
+    var hasLoggedOut by remember { mutableStateOf(false) }
+
     // Animated floating effect
     val infiniteTransition = rememberInfiniteTransition(label = "float")
     val floatY by infiniteTransition.animateFloat(
@@ -52,6 +56,56 @@ fun ProfileScreen(
         ),
         label = "floatY"
     )
+
+    // Navigate to login after logout
+    LaunchedEffect(hasLoggedOut) {
+        if (hasLoggedOut) {
+            onLogout() // Navigate to login screen
+        }
+    }
+
+    // Logout Confirmation Dialog
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Logout",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text("Are you sure you want to logout?")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLogoutDialog = false
+                        viewModel.signOut() // ✅ Call the ViewModel's signOut method
+                        hasLoggedOut = true // ✅ Trigger navigation to login
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Logout")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -65,10 +119,7 @@ fun ProfileScreen(
                     .fillMaxWidth()
                     .background(
                         brush = Brush.verticalGradient(
-                            colors = listOf(
-                                LightBlue,
-                                AccentPurple
-                            )
+                            colors = listOf(LightBlue, AccentPurple)
                         )
                     )
             ) {
@@ -160,10 +211,7 @@ fun ProfileScreen(
                                 .clip(CircleShape)
                                 .background(
                                     Brush.linearGradient(
-                                        colors = listOf(
-                                            PrimaryBlue,
-                                            AccentPurple
-                                        )
+                                        colors = listOf(PrimaryBlue, AccentPurple)
                                     )
                                 )
                         )
@@ -190,7 +238,7 @@ fun ProfileScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "JD",
+                                text = authState.currentUserData?.fullName?.take(2)?.uppercase() ?: "JD",
                                 fontSize = 42.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = PrimaryBlue
@@ -201,7 +249,7 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Text(
-                        "John Doe",
+                        authState.currentUserData?.fullName ?: "John Doe",
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 26.sp,
                         color = Color(0xFF1A1A1A)
@@ -210,7 +258,7 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        "john.doe@example.com",
+                        authState.currentUserData?.email ?: "john.doe@example.com",
                         color = Color(0xFF6B7280),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium
@@ -235,7 +283,8 @@ fun ProfileScreen(
                                     .background(PrimaryBlue)
                             )
                             Text(
-                                text = if (isOwnerView) "Job Owner" else "Student",
+                                text = authState.currentUserData?.userType?.replaceFirstChar { it.uppercase() }
+                                    ?: if (isOwnerView) "Job Owner" else "Student",
                                 color = PrimaryBlue,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
@@ -247,7 +296,7 @@ fun ProfileScreen(
 
                     // Edit Profile Button
                     Button(
-                        onClick = { navController.navigate(EDIT_PROFILE_ROUTE) },
+                        onClick = onNavigateToEditProfile,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
@@ -298,7 +347,13 @@ fun ProfileScreen(
                         ProfileMenuItem(icon = Icons.Default.Security, title = "Security") {}
                         ProfileMenuItem(icon = Icons.Default.Info, title = "About") {}
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        ProfileMenuItem(icon = Icons.AutoMirrored.Filled.Logout, title = "Logout", isDestructive = true) {}
+                        ProfileMenuItem(
+                            icon = Icons.AutoMirrored.Filled.Logout,
+                            title = "Logout",
+                            isDestructive = true
+                        ) {
+                            showLogoutDialog = true
+                        }
                     }
                 }
             }
@@ -308,9 +363,9 @@ fun ProfileScreen(
 
 @Composable
 fun ProfileMenuItem(
-    icon: ImageVector, 
-    title: String, 
-    isDestructive: Boolean = false, 
+    icon: ImageVector,
+    title: String,
+    isDestructive: Boolean = false,
     onClick: () -> Unit
 ) {
     Row(
@@ -339,10 +394,4 @@ fun ProfileMenuItem(
             modifier = Modifier.size(16.dp)
         )
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ProfileScreenPreview() {
-    ProfileScreen(navController = rememberNavController())
 }

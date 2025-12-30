@@ -3,202 +3,282 @@ package com.example.jobnest.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.jobnest.data.Job
-import com.example.jobnest.repository.AuthRepository
-import com.example.jobnest.repository.JobRepository
-import com.example.jobnest.repository.SavedJobRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 data class JobState(
-    val isLoading: Boolean = false,
     val jobs: List<Job> = emptyList(),
+    val savedJobs: List<Job> = emptyList(),
     val savedJobIds: Set<String> = emptySet(),
+    val isLoading: Boolean = false,
     val error: String? = null
 )
 
 class JobViewModel : ViewModel() {
-    private val jobRepository = JobRepository()
-    private val authRepository = AuthRepository()
-    private val savedJobRepository = SavedJobRepository()
-    
+    private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+
     private val _jobState = MutableStateFlow(JobState())
-    val jobState: StateFlow<JobState> = _jobState.asStateFlow()
-    
-    init {
-        loadJobs()
-        loadSavedJobs()
-    }
-    
+    val jobState: StateFlow<JobState> = _jobState
+
+    private var jobsListener: ListenerRegistration? = null
+    private var myJobsListener: ListenerRegistration? = null
+
     fun loadJobs() {
-        viewModelScope.launch {
-            _jobState.value = _jobState.value.copy(isLoading = true, error = null)
-            val result = jobRepository.getAllJobs()
-            result.onSuccess { jobs ->
+        _jobState.value = _jobState.value.copy(isLoading = true, error = null)
+        jobsListener?.remove()
+        jobsListener = db.collection("jobs")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    _jobState.value = _jobState.value.copy(
+                        isLoading = false,
+                        error = "Failed to load jobs: ${e.message}"
+                    )
+                    return@addSnapshotListener
+                }
+
+                val jobs = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Job::class.java)?.copy(jobId = doc.id)
+                }?.sortedByDescending { it.getCreatedAtLong() } ?: emptyList()
+
                 _jobState.value = _jobState.value.copy(
-                    isLoading = false,
-                    jobs = jobs
+                    jobs = jobs,
+                    isLoading = false
                 )
-            }.onFailure { exception ->
+                loadSavedJobIds()
+            }
+    }
+
+    fun loadMyJobs() {
+        val userId = auth.currentUser?.uid
+        if (userId == null) {
+            _jobState.value = _jobState.value.copy(
+                error = "User not logged in",
+                isLoading = false
+            )
+            return
+        }
+
+        _jobState.value = _jobState.value.copy(isLoading = true, error = null)
+        myJobsListener?.remove()
+        myJobsListener = db.collection("jobs")
+            .whereEqualTo("ownerId", userId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    _jobState.value = _jobState.value.copy(
+                        isLoading = false,
+                        error = "Failed to load your jobs: ${e.message}"
+                    )
+                    return@addSnapshotListener
+                }
+
+                val jobs = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Job::class.java)?.copy(jobId = doc.id)
+                }?.sortedByDescending { it.getCreatedAtLong() } ?: emptyList()
+
                 _jobState.value = _jobState.value.copy(
-                    isLoading = false,
-                    error = exception.message ?: "Failed to load jobs"
+                    jobs = jobs,
+                    isLoading = false
                 )
             }
-        }
     }
-    
+
     fun createJob(job: Job) {
         viewModelScope.launch {
-            _jobState.value = _jobState.value.copy(isLoading = true, error = null)
-            val userId = authRepository.currentUserId ?: run {
-                _jobState.value = _jobState.value.copy(
-                    isLoading = false,
-                    error = "User not authenticated"
-                )
+            val userId = auth.currentUser?.uid
+            if (userId == null) {
+                _jobState.value = _jobState.value.copy(error = "User not logged in")
                 return@launch
             }
-            
-            val userData = authRepository.getCurrentUserData().getOrNull()
-            val jobWithOwner = job.copy(
-                ownerId = userId,
-                ownerName = userData?.fullName ?: "",
-                ownerEmail = userData?.email ?: "",
-                ownerPhone = userData?.phone ?: ""
-            )
-            
-            val result = jobRepository.createJob(jobWithOwner)
-            result.onSuccess {
-                loadJobs()
-            }.onFailure { exception ->
-                _jobState.value = _jobState.value.copy(
-                    isLoading = false,
-                    error = exception.message ?: "Failed to create job"
-                )
-            }
-        }
-    }
-    
-    fun updateJob(jobId: String, job: Job) {
-        viewModelScope.launch {
+
             _jobState.value = _jobState.value.copy(isLoading = true, error = null)
-            val result = jobRepository.updateJob(jobId, job)
-            result.onSuccess {
-                loadJobs()
-            }.onFailure { exception ->
+            try {
+                val jobId = db.collection("jobs").document().id
+
+                val jobData = hashMapOf(
+                    "jobId" to jobId,
+                    "title" to job.title,
+                    "description" to job.description,
+                    "company" to job.company,
+                    "contactNumber" to job.contactNumber,
+                    "location" to job.location,
+                    "minSalary" to job.minSalary,
+                    "maxSalary" to job.maxSalary,
+                    "workType" to job.workType,
+                    "food" to job.food,
+                    "transport" to job.transport,
+                    "workTime" to job.workTime,
+                    "requiredPersons" to job.requiredPersons,
+                    "genderPreference" to job.genderPreference,
+                    "ageLimit" to job.ageLimit,
+                    "ownerId" to userId,
+                    "ownerName" to job.ownerName,
+                    "ownerEmail" to auth.currentUser?.email.orEmpty(),
+                    "ownerPhone" to job.ownerPhone,
+                    "createdAt" to System.currentTimeMillis(),
+                    "updatedAt" to System.currentTimeMillis()
+                )
+
+                db.collection("jobs")
+                    .document(jobId)
+                    .set(jobData)
+                    .await()
+
+                _jobState.value = _jobState.value.copy(isLoading = false)
+            } catch (e: Exception) {
                 _jobState.value = _jobState.value.copy(
                     isLoading = false,
-                    error = exception.message ?: "Failed to update job"
+                    error = "Failed to post job: ${e.message}"
                 )
             }
         }
     }
-    
-    fun deleteJob(jobId: String) {
-        viewModelScope.launch {
-            _jobState.value = _jobState.value.copy(isLoading = true, error = null)
-            val result = jobRepository.deleteJob(jobId)
-            result.onSuccess {
-                loadJobs()
-            }.onFailure { exception ->
-                _jobState.value = _jobState.value.copy(
-                    isLoading = false,
-                    error = exception.message ?: "Failed to delete job"
-                )
-            }
-        }
-    }
-    
+
     fun searchJobs(query: String) {
+        if (query.isBlank()) {
+            loadJobs()
+            return
+        }
+
+        jobsListener?.remove()
         viewModelScope.launch {
             _jobState.value = _jobState.value.copy(isLoading = true, error = null)
-            val result = if (query.isBlank()) {
-                jobRepository.getAllJobs()
-            } else {
-                jobRepository.searchJobs(query)
-            }
-            result.onSuccess { jobs ->
+            try {
+                val snapshot = db.collection("jobs")
+                    .get()
+                    .await()
+
+                val allJobs = snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(Job::class.java)?.copy(jobId = doc.id)
+                }
+
+                val filteredJobs = allJobs.filter { job ->
+                    job.title.contains(query, ignoreCase = true) ||
+                            job.company.contains(query, ignoreCase = true) ||
+                            job.location.contains(query, ignoreCase = true) ||
+                            job.workType.contains(query, ignoreCase = true)
+                }.sortedByDescending { it.getCreatedAtLong() }
+
                 _jobState.value = _jobState.value.copy(
-                    isLoading = false,
-                    jobs = jobs
+                    jobs = filteredJobs,
+                    isLoading = false
                 )
-            }.onFailure { exception ->
+                loadSavedJobIds()
+            } catch (e: Exception) {
                 _jobState.value = _jobState.value.copy(
                     isLoading = false,
-                    error = exception.message ?: "Search failed"
+                    error = "Failed to search jobs: ${e.message}"
                 )
             }
         }
     }
-    
-    fun filterJobs(workType: String? = null, workTime: String? = null, location: String? = null, minSalary: Int? = null) {
+
+    fun toggleBookmark(jobId: String) {
         viewModelScope.launch {
+            val userId = auth.currentUser?.uid ?: return@launch
+            try {
+                val bookmarkRef = db.collection("users")
+                    .document(userId)
+                    .collection("bookmarks")
+                    .document(jobId)
+
+                val doc = bookmarkRef.get().await()
+                if (doc.exists()) {
+                    bookmarkRef.delete().await()
+                } else {
+                    bookmarkRef.set(mapOf("createdAt" to System.currentTimeMillis())).await()
+                }
+                loadSavedJobIds()
+                if (_jobState.value.savedJobs.any { it.jobId == jobId }) {
+                    loadSavedJobs()
+                }
+            } catch (e: Exception) {
+                _jobState.value = _jobState.value.copy(
+                    error = "Failed to update bookmark: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun loadSavedJobIds() {
+        viewModelScope.launch {
+            val userId = auth.currentUser?.uid ?: return@launch
+            try {
+                val snapshot = db.collection("users")
+                    .document(userId)
+                    .collection("bookmarks")
+                    .get()
+                    .await()
+
+                val savedIds = snapshot.documents.map { it.id }.toSet()
+                _jobState.value = _jobState.value.copy(savedJobIds = savedIds)
+            } catch (e: Exception) {
+                // Silently fail for bookmarks
+            }
+        }
+    }
+
+    fun loadSavedJobs() {
+        viewModelScope.launch {
+            val userId = auth.currentUser?.uid
+            if (userId == null) {
+                _jobState.value = _jobState.value.copy(error = "User not logged in", isLoading = false)
+                return@launch
+            }
+
             _jobState.value = _jobState.value.copy(isLoading = true, error = null)
-            val result = jobRepository.filterJobs(workType, workTime, location, minSalary)
-            result.onSuccess { jobs ->
+            try {
+                val bookmarksSnapshot = db.collection("users")
+                    .document(userId)
+                    .collection(
+"bookmarks")
+                    .get()
+                    .await()
+
+                val jobIds = bookmarksSnapshot.documents.map { it.id }
+
+                if (jobIds.isEmpty()) {
+                    _jobState.value = _jobState.value.copy(savedJobs = emptyList(), isLoading = false)
+                    return@launch
+                }
+
+                val savedJobsList = mutableListOf<Job>()
+                jobIds.chunked(10).forEach { batch ->
+                    val jobsSnapshot = db.collection("jobs")
+                        .whereIn("jobId", batch)
+                        .get()
+                        .await()
+                    jobsSnapshot.documents.forEach { doc ->
+                        doc.toObject(Job::class.java)?.let { savedJobsList.add(it) }
+                    }
+                }
+
                 _jobState.value = _jobState.value.copy(
-                    isLoading = false,
-                    jobs = jobs
+                    savedJobs = savedJobsList.sortedByDescending { it.getCreatedAtLong() },
+                    isLoading = false
                 )
-            }.onFailure { exception ->
+
+            } catch (e: Exception) {
                 _jobState.value = _jobState.value.copy(
                     isLoading = false,
-                    error = exception.message ?: "Filter failed"
+                    error = "Failed to load saved jobs: ${e.message}"
                 )
             }
         }
     }
-    
-    fun getJobsByOwner(ownerId: String) {
-        viewModelScope.launch {
-            _jobState.value = _jobState.value.copy(isLoading = true, error = null)
-            val result = jobRepository.getJobsByOwner(ownerId)
-            result.onSuccess { jobs ->
-                _jobState.value = _jobState.value.copy(
-                    isLoading = false,
-                    jobs = jobs
-                )
-            }.onFailure { exception ->
-                _jobState.value = _jobState.value.copy(
-                    isLoading = false,
-                    error = exception.message ?: "Failed to load jobs"
-                )
-            }
-        }
-    }
-    
-    private fun loadSavedJobs() {
-        viewModelScope.launch {
-            val userId = authRepository.currentUserId ?: return@launch
-            val result = savedJobRepository.getSavedJobIds(userId)
-            result.onSuccess { jobIds ->
-                _jobState.value = _jobState.value.copy(
-                    savedJobIds = jobIds.toSet()
-                )
-            }
-        }
-    }
-    
-    fun toggleSaveJob(jobId: String) {
-        viewModelScope.launch {
-            val userId = authRepository.currentUserId ?: return@launch
-            val isSaved = _jobState.value.savedJobIds.contains(jobId)
-            
-            val result = if (isSaved) {
-                savedJobRepository.unsaveJob(userId, jobId)
-            } else {
-                savedJobRepository.saveJob(userId, jobId)
-            }
-            
-            result.onSuccess {
-                loadSavedJobs()
-            }
-        }
-    }
-    
+
     fun clearError() {
         _jobState.value = _jobState.value.copy(error = null)
     }
-}
 
+    override fun onCleared() {
+        super.onCleared()
+        jobsListener?.remove()
+        myJobsListener?.remove()
+    }
+}
