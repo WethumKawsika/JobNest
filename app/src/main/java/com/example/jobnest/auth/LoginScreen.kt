@@ -1,5 +1,4 @@
 package com.example.jobnest.auth
-import androidx.lifecycle.viewmodel.compose.viewModel
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -37,18 +36,13 @@ import androidx.compose.ui.unit.sp
 import com.example.jobnest.R
 import com.example.jobnest.viewmodel.AuthViewModel
 
-// Premium Color Palette
 private val PrimaryBlue = Color(0xFF2E5BFF)
 private val SecondaryPurple = Color(0xFF8E44AD)
 private val AccentPink = Color(0xFFFF6B9D)
-private val DarkBlue = Color(0xFF1A237E)
 private val LightBlue = Color(0xFF667EEA)
-private val SoftWhite = Color(0xFFFAFAFA)
-private val CardWhite = Color(0xFFFFFFFF)
 
 @Composable
 fun LoginScreen(
-
     onSignUpClicked: () -> Unit,
     onStudentLoginSuccess: () -> Unit,
     onOwnerLoginSuccess: () -> Unit,
@@ -63,42 +57,36 @@ fun LoginScreen(
     val scrollState = rememberScrollState()
     val authState by viewModel.authState.collectAsState()
 
-    // Track if we need to show role dialog after Google login
-    var pendingGoogleLogin by remember { mutableStateOf(false) }
-
-    // Handle authentication success
+    // Handle navigation after successful authentication
     LaunchedEffect(authState.isAuthenticated, authState.currentUserData?.userType) {
-        if (authState.isAuthenticated) {
+        if (authState.isAuthenticated && authState.currentUserData != null) {
             val userType = authState.currentUserData?.userType
 
-            // If user type already exists (returning user), navigate directly
-            if (userType != null && !pendingGoogleLogin) {
+            if (userType == null) {
+                // New Google user without role - show dialog
+                showRoleDialog = true
+            } else {
+                // Existing user with role - navigate directly
                 when (userType) {
                     "student" -> onStudentLoginSuccess()
                     "owner" -> onOwnerLoginSuccess()
                 }
             }
-            // If this is a new Google login without userType, show role dialog
-            else if (pendingGoogleLogin && userType == null) {
-                showRoleDialog = true
-                pendingGoogleLogin = false
-            }
         }
     }
 
-    // Role selection dialog
+    // Role selection dialog for new Google users
     if (showRoleDialog) {
         RoleSelectionDialog(
             onDismiss = {
                 showRoleDialog = false
-                viewModel.signOut() // Sign out if they cancel role selection
+                viewModel.signOut()
             },
             onRoleSelected = { role ->
                 showRoleDialog = false
-                // Save the role to Firestore/database
                 viewModel.updateUserRole(role)
 
-                // Navigate based on role
+                // Navigate based on selected role
                 when (role) {
                     "student" -> onStudentLoginSuccess()
                     "owner" -> onOwnerLoginSuccess()
@@ -119,7 +107,6 @@ fun LoginScreen(
         label = "floatY"
     )
 
-    // Logo pulse animation
     val logoPulse by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 1.08f,
@@ -171,7 +158,6 @@ fun LoginScreen(
         ) {
             Spacer(modifier = Modifier.height(60.dp))
 
-            // Logo with pulse animation
             Image(
                 painter = painterResource(id = R.drawable.jobnest_logo),
                 contentDescription = "JobNest Logo",
@@ -183,7 +169,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Welcome Text with shadow effect
             Text(
                 text = "Welcome Back!",
                 fontSize = 36.sp,
@@ -204,7 +189,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Modern Glass-morphism Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(32.dp),
@@ -218,9 +202,7 @@ fun LoginScreen(
                 ) {
                     // Google Sign In Button
                     OutlinedButton(
-                        onClick = {
-                            onGoogleSignInClicked()
-                        },
+                        onClick = onGoogleSignInClicked,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
@@ -390,7 +372,7 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Sign In Button with gradient
+                    // Sign In Button
                     Button(
                         onClick = {
                             if (email.isNotBlank() && password.isNotBlank()) {

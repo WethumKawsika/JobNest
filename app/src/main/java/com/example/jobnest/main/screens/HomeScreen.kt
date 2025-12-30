@@ -135,6 +135,7 @@ fun HomeScreen(
                                 )
                             }
 
+
                             // Modern Switch Button
                             Surface(
                                 onClick = onSwitchView,
@@ -147,8 +148,7 @@ fun HomeScreen(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp
-                                )
-                            }
+                                )}
                         }
 
                         Spacer(Modifier.height(12.dp))
