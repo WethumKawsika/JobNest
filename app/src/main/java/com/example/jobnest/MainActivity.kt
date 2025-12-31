@@ -1,5 +1,5 @@
 package com.example.jobnest
-
+import com.example.jobnest.viewmodel.LocationViewModel
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -121,19 +121,17 @@ fun JobNestApp(
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = viewModel()
     val jobViewModel: JobViewModel = viewModel()
+    val locationViewModel: LocationViewModel = viewModel()
     var jobPostRefreshTrigger by remember { mutableStateOf(0) }
 
     NavHost(navController, startDestination = "splash", modifier = modifier) {
 
         composable("splash") {
+            val authState by authViewModel.authState.collectAsState()
             SplashScreen(
-                onLoginNavigate = {
-                    navController.navigate("login") {
-                        popUpTo("splash") { inclusive = true }
-                    }
-                },
-                onMainNavigate = {
-                    navController.navigate("main") {
+                onSplashComplete = {
+                    val destination = if (authState.currentUserData != null) "main" else "login"
+                    navController.navigate(destination) {
                         popUpTo("splash") { inclusive = true }
                     }
                 }
@@ -226,18 +224,45 @@ fun JobNestApp(
         }
 
         composable("post_job") {
+            val locationState by locationViewModel.locationState.collectAsState()
+
+            val savedStateHandle = it.savedStateHandle
+            val selectedAddress = savedStateHandle.get<String>("selected_address") ?: ""
+            val selectedLat = savedStateHandle.get<Double>("selected_lat")
+            val selectedLng = savedStateHandle.get<Double>("selected_lng")
+            val selectedLatLng = if (selectedLat != null && selectedLng != null) {
+                LatLng(selectedLat, selectedLng)
+            } else null
+
             PostJobScreen(
-                selectedAddress = "",
-                selectedLatLng = null,
+                selectedAddress = selectedAddress,
+                selectedLatLng = selectedLatLng,
                 onOpenMapPicker = { navController.navigate("map_picker") },
                 onBackPressed = { navController.navigateUp() },
-                onPostJob = { navController.navigateUp() }
+                onJobPostedSuccessfully = {
+                    locationViewModel.clearLocation()
+                    // Let the MainScreen know it should refresh the job list
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("should_refresh_jobs", true)
+                    navController.navigateUp()
+                }
+
             )
         }
 
         composable("map_picker") {
             MapPickerScreen(
-                onLocationSelected = { _, _ -> navController.navigateUp() },
+                onLocationSelected = { address, latLng ->
+                    navController.previousBackStackEntry?.savedStateHandle?.apply {
+                        set("selected_address", address)
+                        set("selected_lat", latLng.latitude)
+                        set("selected_lng", latLng.longitude)
+                    }
+                    locationViewModel.setLocation(address, latLng)
+
+                    navController.navigateUp()
+                },
                 onBackPressed = { navController.navigateUp() }
             )
         }

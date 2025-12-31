@@ -31,7 +31,7 @@ fun JobOwnerScreen(rootNavController: NavController, onSwitchView: () -> Unit) {
         composable(POST_JOB_ROUTE) {
             PostJobScreen(
                 onBackPressed = { ownerNavController.popBackStack() },
-                onPostJob = { ownerNavController.popBackStack() },
+                onJobPostedSuccessfully = { ownerNavController.popBackStack() },
                 onOpenMapPicker = { ownerNavController.navigate(MAP_PICKER_ROUTE) },
                 selectedAddress = selectedAddress,
                 selectedLatLng = selectedLatLng

@@ -17,6 +17,8 @@ import com.example.jobnest.main.screens.HomeScreen
 import com.example.jobnest.main.screens.ProfileScreen
 import com.example.jobnest.main.screens.SavedScreen
 import com.example.jobnest.main.screens.SearchScreen
+import com.example.jobnest.main.screens.NotificationsScreen
+import com.example.jobnest.main.screens.AboutScreen
 import com.example.jobnest.viewmodel.AuthViewModel
 import com.example.jobnest.viewmodel.JobViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -96,9 +98,20 @@ fun StudentMainScreen(
                     onNavigateToEditProfile = {
                         // TODO: Navigate to edit profile
                     },
+                    onNavigateToNotifications = { navController.navigate("notifications") },
+                    onNavigateToSecurity = { /* TODO: Security */ },
+                    onNavigateToAbout = { navController.navigate("about") },
                     onLogout = onLogout,
                     viewModel = viewModel
                 )
+            }
+
+            composable("notifications") {
+                NotificationsScreen(onBackPressed = { navController.navigateUp() })
+            }
+
+            composable("about") {
+                AboutScreen(onBackPressed = { navController.navigateUp() })
             }
         }
     }

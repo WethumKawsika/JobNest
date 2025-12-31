@@ -71,11 +71,6 @@ fun SignUpScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var userType by remember { mutableStateOf("Student") }
 
-    var fullNameError by remember { mutableStateOf<String?>(null) }
-    var emailError by remember { mutableStateOf<String?>(null) }
-    var passwordError by remember { mutableStateOf<String?>(null) }
-    var confirmPasswordError by remember { mutableStateOf<String?>(null) }
-
     val authState by viewModel.authState.collectAsState()
     val context = LocalContext.current
 
@@ -139,81 +134,50 @@ fun SignUpScreen(
 
                     OutlinedTextField(
                         value = fullName,
-                        onValueChange = {
-                            fullName = it
-                            fullNameError = null
-                        },
+                        onValueChange = { fullName = it },
                         label = { Text("Full Name") },
                         leadingIcon = { Icon(Icons.Default.Person, null) },
                         modifier = Modifier.fillMaxWidth(),
-                        isError = fullNameError != null,
-                        supportingText = {
-                            fullNameError?.let {
-                                Text(text = it, color = MaterialTheme.colorScheme.error)
-                            }
-                        }
+                        isError = authState.error != null && fullName.isBlank()
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
                         value = email,
-                        onValueChange = {
-                            email = it
-                            emailError = null
-                        },
+                        onValueChange = { email = it },
                         label = { Text("Email address") },
                         leadingIcon = { Icon(Icons.Default.Email, null) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        isError = emailError != null,
-                        supportingText = {
-                            emailError?.let {
-                                Text(text = it, color = MaterialTheme.colorScheme.error)
-                            }
-                        }
+                        isError = authState.error != null && email.isBlank()
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
                         value = password,
-                        onValueChange = {
-                            password = it
-                            passwordError = null
-                        },
+                        onValueChange = { password = it },
                         label = { Text("Password") },
                         leadingIcon = { Icon(Icons.Default.Lock, null) },
                         modifier = Modifier.fillMaxWidth(),
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        isError = passwordError != null,
-                        supportingText = {
-                            passwordError?.let {
-                                Text(text = it, color = MaterialTheme.colorScheme.error)
-                            }
-                        }
+                        isError = authState.error != null && password.isBlank()
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
                         value = confirmPassword,
-                        onValueChange = {
-                            confirmPassword = it
-                            confirmPasswordError = null
-                        },
+                        onValueChange = { confirmPassword = it },
                         label = { Text("Confirm Password") },
                         leadingIcon = { Icon(Icons.Default.Lock, null) },
                         modifier = Modifier.fillMaxWidth(),
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        isError = confirmPasswordError != null,
-                        supportingText = {
-                            confirmPasswordError?.let {
-                                Text(text = it, color = MaterialTheme.colorScheme.error)
-                            }
-                        }
+                        isError = authState.error != null &&
+                                (confirmPassword.isBlank() || password != confirmPassword)
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -290,28 +254,35 @@ fun SignUpScreen(
 
                     Button(
                         onClick = {
-                            fullNameError = if (fullName.isBlank()) "Full name cannot be empty" else null
-                            emailError = if (email.isBlank()) "Email cannot be empty" else if (!email.contains('@') || !email.contains('.')) "Invalid email format" else null
-                            passwordError = if (password.isBlank()) "Password cannot be empty" else if (password.length < 6) "Password must be at least 6 characters" else null
-                            confirmPasswordError = if (confirmPassword.isBlank()) "Please confirm your password" else if (password != confirmPassword) "Passwords do not match" else null
+                            when {
+                                fullName.isBlank() -> {}
+                                email.isBlank() -> {}
+                                password.isBlank() -> {}
+                                password != confirmPassword -> {}
+                                password.length < 6 -> {}
+                                else -> {
+                                    viewModel.signUpWithEmail(
+                                        email = email,
+                                        password = password,
+                                        fullName = fullName,
+                                        phoneNumber = "",   // optional for now
+                                        address = "",       // optional for now
+                                        userType = userType
+                                    )
 
-                            val isValid = fullNameError == null && emailError == null && passwordError == null && confirmPasswordError == null
-
-                            if (isValid) {
-                                viewModel.signUpWithEmail(
-                                    email = email,
-                                    password = password,
-                                    fullName = fullName,
-                                    phoneNumber = "",   // optional for now
-                                    address = "",       // optional for now
-                                    userType = userType
-                                )
+                                }
                             }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
-                        enabled = !authState.isLoading
+                        enabled = !authState.isLoading &&
+                                fullName.isNotBlank() &&
+                                email.isNotBlank() &&
+                                password.isNotBlank() &&
+                                confirmPassword.isNotBlank() &&
+                                password == confirmPassword &&
+                                password.length >= 6
                     ) {
                         if (authState.isLoading) {
                             Row(

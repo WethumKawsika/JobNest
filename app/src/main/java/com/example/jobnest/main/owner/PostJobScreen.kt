@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -40,49 +41,51 @@ private val SoftBackground = Color(0xFFF8F9FD)
 @Composable
 fun PostJobScreen(
     onBackPressed: () -> Unit = {},
-    onPostJob: () -> Unit = {},
     onOpenMapPicker: () -> Unit = {},
     selectedAddress: String = "",
+    onJobPostedSuccessfully: () -> Unit,
     selectedLatLng: LatLng? = null,
     viewModel: JobViewModel = viewModel(),
     authViewModel: AuthViewModel = viewModel()
 ) {
-    var jobTitle by remember { mutableStateOf("") }
-    var company by remember { mutableStateOf("") }
-    var contactNumber by remember { mutableStateOf("") }
-    var minSalary by remember { mutableStateOf("") }
-    var maxSalary by remember { mutableStateOf("") }
-    var location by remember { mutableStateOf("") }
-    var requiredPersons by remember { mutableStateOf("") }
-    var ageLimit by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    var jobTitle by rememberSaveable { mutableStateOf("") }
+    var company by rememberSaveable { mutableStateOf("") }
+    var contactNumber by rememberSaveable { mutableStateOf("") }
+    var minSalary by rememberSaveable { mutableStateOf("") }
+    var maxSalary by rememberSaveable { mutableStateOf("") }
+    var location by rememberSaveable { mutableStateOf("") }
+    var requiredPersons by rememberSaveable { mutableStateOf("") }
+    var ageLimit by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
 
-    var workTypeExpanded by remember { mutableStateOf(false) }
-    var selectedWorkType by remember { mutableStateOf("Select work type") }
+    var workTypeExpanded by rememberSaveable { mutableStateOf(false) }
+    var selectedWorkType by rememberSaveable { mutableStateOf("Select work type") }
 
-    var workTimeExpanded by remember { mutableStateOf(false) }
-    var selectedWorkTime by remember { mutableStateOf("Select work time") }
+    var workTimeExpanded by rememberSaveable { mutableStateOf(false) }
+    var selectedWorkTime by rememberSaveable { mutableStateOf("Select work time") }
 
-    var foodExpanded by remember { mutableStateOf(false) }
-    var selectedFood by remember { mutableStateOf("Select food availability") }
+    var foodExpanded by rememberSaveable { mutableStateOf(false) }
+    var selectedFood by rememberSaveable { mutableStateOf("Select food availability") }
 
-    var transportExpanded by remember { mutableStateOf(false) }
-    var selectedTransport by remember { mutableStateOf("Select transport") }
+    var transportExpanded by rememberSaveable { mutableStateOf(false) }
+    var selectedTransport by rememberSaveable { mutableStateOf("Select transport") }
 
-    var genderExpanded by remember { mutableStateOf(false) }
-    var selectedGender by remember { mutableStateOf("Any") }
+    var genderExpanded by rememberSaveable { mutableStateOf(false) }
+    var selectedGender by rememberSaveable { mutableStateOf("Any") }
 
     var currentLatLng by remember { mutableStateOf<LatLng?>(null) }
-    var validationError by remember { mutableStateOf<String?>(null) }
+    var validationError by rememberSaveable { mutableStateOf<String?>(null) }
 
     val jobState by viewModel.jobState.collectAsState()
     val authState by authViewModel.authState.collectAsState()
+
+    // Track if we've successfully posted a job
+    var jobPostedSuccessfully by rememberSaveable { mutableStateOf(false) }
 
     // Function to clear all form fields
     val clearForm = {
         jobTitle = ""
         company = ""
-        // Don't clear the contact number as it might be pre-filled
         minSalary = ""
         maxSalary = ""
         location = ""
@@ -96,9 +99,6 @@ fun PostJobScreen(
         selectedGender = "Any"
         validationError = null
     }
-
-    // Track if we just posted a job
-    var justPostedJob by remember { mutableStateOf(false) }
 
     // Update location when selectedAddress changes
     LaunchedEffect(selectedAddress) {
@@ -123,17 +123,18 @@ fun PostJobScreen(
         }
     }
 
+    // Clear any existing errors when screen loads
     LaunchedEffect(Unit) {
         viewModel.clearError()
     }
 
-    // Handle successful job posting
-    LaunchedEffect(jobState.isLoading, jobState.error, justPostedJob) {
-        if (justPostedJob && !jobState.isLoading && jobState.error == null) {
-            // Job posted successfully
-            viewModel.loadJobs()
-            justPostedJob = false
-            onPostJob() // Navigate back
+    // Handle successful job posting - clear form and navigate back
+    LaunchedEffect(jobState.isLoading, jobState.error) {
+        if (jobPostedSuccessfully && !jobState.isLoading && jobState.error == null) {
+            // Clear form after successful posting
+            clearForm()
+            jobPostedSuccessfully = false
+            onJobPostedSuccessfully() // Notify host (MainActivity) to clear location, refresh and navigate back
         }
     }
 
@@ -310,7 +311,7 @@ fun PostJobScreen(
                                         onValueChange = {},
                                         readOnly = true,
                                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderExpanded) },
-                                        modifier = Modifier.fillMaxWidth().height(56.dp).menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                                        modifier = Modifier.fillMaxWidth().height(56.dp).menuAnchor(),
                                         shape = RoundedCornerShape(16.dp),
                                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryBlue, unfocusedBorderColor = Color(0xFFE2E8F0), focusedContainerColor = Color(0xFFF7FAFC), unfocusedContainerColor = Color(0xFFF7FAFC)),
                                         textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
@@ -360,6 +361,7 @@ fun PostJobScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // Show validation errors
                     validationError?.let { error ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -390,6 +392,7 @@ fun PostJobScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
+                    // Show job posting errors from ViewModel
                     jobState.error?.let { error ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -417,6 +420,7 @@ fun PostJobScreen(
                                 )
                             }
                         }
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -440,7 +444,7 @@ fun PostJobScreen(
                             )
 
                             if (errorMessage == null) {
-                                validationError = null // Clear previous errors
+                                validationError = null // Clear validation errors
                                 val job = Job(
                                     title = jobTitle,
                                     description = description,
@@ -460,11 +464,11 @@ fun PostJobScreen(
                                     ageLimit = ageLimit.takeIf { it.isNotBlank() }
                                 )
 
-                                // Create the job and provide the onSuccess lambda for navigation
+                                // Create the job and set flag to clear form on success
                                 viewModel.createJob(
                                     job = job,
                                     onSuccess = {
-                                        onPostJob() // Navigate back on success
+                                        jobPostedSuccessfully = true
                                     }
                                 )
                             } else {
@@ -479,7 +483,6 @@ fun PostJobScreen(
                         contentPadding = PaddingValues(0.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
                     ) {
-                        // ... (Rest of the Button UI is correct)
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -517,8 +520,6 @@ fun PostJobScreen(
                         }
                     }
 
-                }
-
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Row(Modifier.fillMaxWidth()) {
@@ -551,6 +552,7 @@ fun PostJobScreen(
             }
         }
     }
+}
 
 @Composable
 fun JobInputField(
@@ -559,7 +561,6 @@ fun JobInputField(
     onValueChange: (String) -> Unit,
     leadingIcon: ImageVector,
     placeholder: String,
-
     keyboardType: KeyboardType = KeyboardType.Text
 ) {
     Column {
@@ -597,6 +598,7 @@ fun JobInputField(
         )
     }
 }
+
 private fun getValidationError(
     jobTitle: String,
     company: String,
@@ -670,7 +672,7 @@ fun DropdownField(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                    .menuAnchor(),
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PrimaryBlue,
@@ -773,30 +775,4 @@ private fun LocationInputField(location: String, onOpenMapPicker: () -> Unit) {
             }
         }
     }
-}
-
-private fun validateFields(
-    jobTitle: String,
-    company: String,
-    contactNumber: String,
-    minSalary: String,
-    maxSalary: String,
-    location: String,
-    workType: String,
-    workTime: String,
-    food: String,
-    transport: String,
-    requiredPersons: String
-): Boolean {
-    return jobTitle.isNotBlank() &&
-            company.isNotBlank() &&
-            contactNumber.isNotBlank() &&
-            minSalary.isNotBlank() &&
-            maxSalary.isNotBlank() &&
-            location.isNotBlank() &&
-            workType != "Select work type" &&
-            workTime != "Select work time" &&
-            food != "Select food availability" &&
-            transport != "Select transport" &&
-            requiredPersons.isNotBlank()
 }

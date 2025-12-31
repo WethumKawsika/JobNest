@@ -13,6 +13,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.jobnest.main.screens.ProfileScreen
+import com.example.jobnest.main.screens.NotificationsScreen
+import com.example.jobnest.main.screens.AboutScreen
 import com.example.jobnest.viewmodel.AuthViewModel
 import com.example.jobnest.viewmodel.JobViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -82,7 +84,7 @@ fun OwnerMainScreen(
                             restoreState = true
                         }
                     },
-                    onPostJob = {
+                    onJobPostedSuccessfully = {
                         // After successfully posting, navigate to My Jobs
                         selectedItem = 0  // Set My Jobs tab as selected
                         refreshTrigger++  // Trigger refresh of MyJobsScreen
@@ -109,9 +111,19 @@ fun OwnerMainScreen(
                     onNavigateToEditProfile = {
                         // TODO: Navigate to edit profile
                     },
+                    onNavigateToNotifications = { navController.navigate("notifications") },
+                    onNavigateToAbout = { navController.navigate("about") },
                     onLogout = onLogout,
                     viewModel = viewModel
                 )
+            }
+
+            composable("notifications") {
+                NotificationsScreen(onBackPressed = { navController.navigateUp() })
+            }
+
+            composable("about") {
+                AboutScreen(onBackPressed = { navController.navigateUp() })
             }
         }
     }
