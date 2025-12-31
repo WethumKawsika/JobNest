@@ -1,5 +1,6 @@
 package com.example.jobnest.main.owner
 
+import android.content.Intent
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -8,8 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.WorkOutline
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,12 +18,16 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.jobnest.main.screens.common.Job
+import androidx.core.net.toUri
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.jobnest.main.screens.common.JobListItem
+import com.example.jobnest.main.screens.common.JobUI
+import com.example.jobnest.utils.toUIJob
+import com.example.jobnest.viewmodel.JobViewModel
 
 // Premium Color Palette
 private val PrimaryBlue = Color(0xFF2E5BFF)
@@ -34,38 +38,22 @@ private val SoftBackground = Color(0xFFF8F9FD)
 @Composable
 fun MyJobsScreen(
     onSwitchView: () -> Unit = {},
-    onPostJob: () -> Unit = {}
+    viewModel: JobViewModel = viewModel(),
+    refreshTrigger: Int = 0
 ) {
-    // FIXED: Updated list with all mandatory fields from your new Job data class
-    val myJobs = listOf(
-        Job(
-            title = "Part-Time Waiter",
-            description = "Looking for a friendly waiter for evening shifts at a busy restaurant.",
-            company = "Food Service",
-            location = "Colombo 03",
-            salary = "Rs. 800/day",
-            workType = "Part-Time",
-            food = "Dinner provided",
-            transport = "Not provided",
-            workTime = "Evening (5 PM - 11 PM)",
-            requiredPersons = "Male, 2",
-            isBookmarked = true
-        ),
-        Job(
-            title = "Delivery Driver",
-            description = "Delivery driver needed for morning shifts. Must have own vehicle.",
-            company = "Flash Delivery",
-            location = "Galle",
-            salary = "Rs. 1200/day",
-            workType = "Delivery",
-            food = "Not provided",
-            transport = "Self",
-            workTime = "Morning (8 AM - 12 PM)",
-            requiredPersons = "Any, 5",
-            isBookmarked = false
-        )
-    )
+    val jobState by viewModel.jobState.collectAsState()
+    val context = LocalContext.current
 
+    // Load jobs created by the current user - reload when refreshTrigger changes
+    LaunchedEffect(refreshTrigger) {
+        viewModel.loadMyJobs()
+    }
+
+    val myJobs: List<JobUI> = jobState.jobs.map { job ->
+        job.toUIJob(isBookmarked = false) // Owner's own jobs don't need bookmark state
+    }
+
+    // Animated floating effect
     val infiniteTransition = rememberInfiniteTransition(label = "float")
     val floatY by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -82,27 +70,89 @@ fun MyJobsScreen(
             .fillMaxSize()
             .background(SoftBackground)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Enhanced Header
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(LightBlue, AccentPurple)
-                        )
-                    )
-            ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 24.dp)
+        ) {
+            /* ================= ENHANCED HEADER ================= */
+            item {
                 Box(
                     modifier = Modifier
-                        .offset(x = (-30).dp, y = 30.dp + floatY.dp)
-                        .size(100.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.1f))
-                        .blur(25.dp)
-                )
+                        .fillMaxWidth()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(LightBlue, AccentPurple)
+                            )
+                        )
+                ) {
+                    // Floating decorative circles
+                    Box(
+                        modifier = Modifier
+                            .offset(x = (-30).dp, y = 40.dp + floatY.dp)
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.1f))
+                            .blur(30.dp)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 30.dp, y = (-20).dp - floatY.dp)
+                            .size(150.dp)
+                            .clip(CircleShape)
+                            .background(PrimaryBlue.copy(alpha = 0.2f))
+                            .blur(40.dp)
+                    )
 
-                Column(modifier = Modifier.padding(24.dp)) {
+                    Column(
+                        modifier = Modifier.padding(24.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Owner Dashboard",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = "My Posted Jobs",
+                                    style = MaterialTheme.typography.headlineMedium.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 28.sp
+                                    ),
+                                    color = Color.White
+                                )
+                            }
+
+
+                        }
+
+                        Spacer(Modifier.height(12.dp))
+
+                        Text(
+                            text = "Manage your job postings and track applications",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.9f),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            /* ================= CONTENT SECTION ================= */
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .padding(top = 24.dp)
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -110,170 +160,162 @@ fun MyJobsScreen(
                     ) {
                         Column {
                             Text(
-                                text = "My Posted Jobs",
-                                fontSize = 28.sp,
+                                text = "Your Jobs",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontSize = 24.sp
+                                ),
                                 fontWeight = FontWeight.ExtraBold,
-                                color = Color.White
-                            )
-                            Text(
-                                text = "Manage your job postings",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.White.copy(alpha = 0.9f)
-                            )
-                        }
-
-                        Surface(
-                            onClick = onSwitchView,
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color.White.copy(alpha = 0.2f),
-                            contentColor = Color.White
-                        ) {
-                            Text(
-                                text = "Student View",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Content Card
-            Card(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .offset(y = (-16).dp),
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
-            ) {
-                if (myJobs.isEmpty()) {
-                    // Empty State UI
-                    EmptyStateView(onPostJob)
-                } else {
-                    // Jobs List
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp)
-                    ) {
-                        // Stats Badge
-                        StatsBadge(myJobs.size)
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Your Listings",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
                                 color = Color(0xFF1A1A1A)
                             )
-
-                            FloatingActionButton(
-                                onClick = onPostJob,
-                                modifier = Modifier.size(48.dp),
-                                containerColor = PrimaryBlue,
-                                contentColor = Color.White,
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = "Post Job")
-                            }
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "${myJobs.size} active posting${if (myJobs.size != 1) "s" else ""}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFF6B7280),
+                                fontWeight = FontWeight.Medium
+                            )
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp)
+                        // Stats Icon
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = PrimaryBlue.copy(alpha = 0.1f),
+                            modifier = Modifier.size(48.dp)
                         ) {
-                            items(myJobs) { job ->
-                                // FIXED: JobListItem now correctly receives the updated Job object
-                                JobListItem(
-                                    job = job,
-                                    onBookmarkClick = { /* Owner doesn't bookmark own job */ },
-                                    onCallClick = { /* Handle edit or view applicants here */ }
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    Icons.Default.BarChart,
+                                    contentDescription = "Statistics",
+                                    tint = PrimaryBlue,
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                         }
                     }
                 }
             }
-        }
-    }
-}
 
-@Composable
-fun StatsBadge(jobCount: Int) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = PrimaryBlue.copy(alpha = 0.1f),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "$jobCount",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = PrimaryBlue
-                )
-                Text(
-                    text = "Active Job${if (jobCount != 1) "s" else ""}",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF6B7280)
-                )
+            item { Spacer(Modifier.height(16.dp)) }
+
+            /* ================= JOB LIST ================= */
+            if (jobState.isLoading && myJobs.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = PrimaryBlue)
+                    }
+                }
+            } else if (myJobs.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.WorkOff,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = Color.Gray.copy(alpha = 0.5f)
+                            )
+                            Text(
+                                text = "No jobs posted yet",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.Gray,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "Tap the + button below to post your first job",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                }
+            } else {
+                items(
+                    items = myJobs,
+                    key = { it.id }
+                ) { job ->
+                    Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+                        JobListItem(
+                            job = job,
+                            onBookmarkClick = {
+                                // Owner's own jobs - bookmark not applicable
+                            },
+                            onCallClick = {
+                                val intent = Intent(Intent.ACTION_DIAL).apply {
+                                    data = "tel:${job.phoneNumber}".toUri()
+                                }
+                                context.startActivity(intent)
+                            },
+                            onLocationClick = {
+                                job.locationLatLng?.let { latLng ->
+                                    val lat = latLng.latitude
+                                    val lng = latLng.longitude
+                                    val gmmIntentUri = "google.navigation:q=$lat,$lng".toUri()
+                                    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+                                    mapIntent.setPackage("com.google.android.apps.maps")
+
+                                    if (mapIntent.resolveActivity(context.packageManager) != null) {
+                                        context.startActivity(mapIntent)
+                                    } else {
+                                        val browserUri =
+                                            "https://www.google.com/maps/dir/?api=1&destination=$lat,$lng".toUri()
+                                        context.startActivity(Intent(Intent.ACTION_VIEW, browserUri))
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
             }
-            Icon(
-                imageVector = Icons.Default.WorkOutline,
-                contentDescription = null,
-                tint = PrimaryBlue,
-                modifier = Modifier.size(28.dp)
-            )
+
+            // Error message
+            jobState.error?.let { error ->
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFFEE2E2)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Error,
+                                contentDescription = null,
+                                tint = Color(0xFFDC2626),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = error,
+                                color = Color(0xFFDC2626),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
-}
-
-@Composable
-fun EmptyStateView(onPostJob: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.WorkOutline,
-            contentDescription = null,
-            modifier = Modifier.size(80.dp),
-            tint = PrimaryBlue.copy(alpha = 0.3f)
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        Text("No Jobs Posted Yet", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(32.dp))
-        Button(
-            onClick = onPostJob,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-        ) {
-            Text("Post Your First Job", color = Color.White)
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MyJobsScreenPreview() {
-    MyJobsScreen()
 }

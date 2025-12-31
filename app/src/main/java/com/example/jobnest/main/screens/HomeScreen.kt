@@ -1,5 +1,7 @@
 package com.example.jobnest.main.screens
 
+import android.content.Intent
+import com.example.jobnest.utils.toUIJob
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -19,12 +21,16 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.jobnest.main.screens.common.Job
-import com.example.jobnest.main.screens.common.JobData
+import androidx.core.net.toUri
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.jobnest.main.screens.common.JobListItem
+import com.example.jobnest.main.screens.common.JobUI
+import com.example.jobnest.utils.toUIJob
+import com.example.jobnest.viewmodel.JobViewModel
 
 // Premium Color Palette
 private val PrimaryBlue = Color(0xFF2E5BFF)
@@ -34,22 +40,29 @@ private val SoftBackground = Color(0xFFF8F9FD)
 
 @Composable
 fun HomeScreen(
-    onSwitchView: () -> Unit = {}
+    onSwitchView: () -> Unit = {},
+    viewModel: JobViewModel = viewModel()
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    var jobs by remember { mutableStateOf(JobData.jobs) }
+    val jobState by viewModel.jobState.collectAsState()
+    val context = LocalContext.current
 
-    val filteredJobs by remember {
-        derivedStateOf {
-            if (searchQuery.isBlank()) {
-                jobs
-            } else {
-                jobs.filter {
-                    it.title.contains(searchQuery, ignoreCase = true) ||
-                            it.description.contains(searchQuery, ignoreCase = true)
-                }
-            }
+    // Load ALL jobs from ALL users on first launch
+    LaunchedEffect(Unit) {
+        viewModel.loadJobs()
+    }
+
+    // Search jobs when query changes
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isBlank()) {
+            viewModel.loadJobs()
+        } else {
+            viewModel.searchJobs(searchQuery)
         }
+    }
+
+    val filteredJobs: List<JobUI> = jobState.jobs.map { job ->
+        job.toUIJob(isBookmarked = jobState.savedJobIds.contains(job.jobId))
     }
 
     // Animated floating effect
@@ -80,10 +93,7 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .background(
                             brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    LightBlue,
-                                    AccentPurple
-                                )
+                                colors = listOf(LightBlue, AccentPurple)
                             )
                         )
                 ) {
@@ -106,9 +116,7 @@ fun HomeScreen(
                             .blur(40.dp)
                     )
 
-                    Column(
-                        modifier = Modifier.padding(24.dp)
-                    ) {
+                    Column(modifier = Modifier.padding(24.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -123,7 +131,7 @@ fun HomeScreen(
                                 )
                                 Spacer(Modifier.height(4.dp))
                                 Text(
-                                    text = "Find Your Dream Job",
+                                    text = "Find Your PartTime Job",
                                     style = MaterialTheme.typography.headlineMedium.copy(
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 28.sp
@@ -132,29 +140,15 @@ fun HomeScreen(
                                 )
                             }
 
+
                             // Modern Switch Button
-                            Surface(
-                                onClick = onSwitchView,
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color.White.copy(alpha = 0.2f),
-                                contentColor = Color.White
-                            ) {
-                                Text(
-                                    text = "Owner",
-                                    modifier = Modifier.padding(
-                                        horizontal = 16.dp,
-                                        vertical = 10.dp
-                                    ),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
-                                )
-                            }
+
                         }
 
                         Spacer(Modifier.height(12.dp))
 
                         Text(
-                            text = "Discover amazing part-time opportunities",
+                            text = "Discover amazing part-time opportunities from various companies",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.White.copy(alpha = 0.9f),
                             fontWeight = FontWeight.Medium
@@ -253,22 +247,84 @@ fun HomeScreen(
             item { Spacer(Modifier.height(16.dp)) }
 
             /* ================= JOB LIST ================= */
-            items(
-                items = filteredJobs,
-                key = { job: Job -> job.id }
-            ) { job: Job ->
-                Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
-                    JobListItem(
-                        job = job,
-                        onBookmarkClick = { updatedJob ->
-                            jobs = jobs.map { it: Job ->
-                                if (it.id == updatedJob.id) updatedJob else it
+            if (jobState.isLoading && filteredJobs.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+            } else if (filteredJobs.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No jobs available",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            } else {
+                items(
+                    items = filteredJobs,
+                    key = { it.id }
+                ) { job ->
+                    Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+                        JobListItem(
+                            job = job,
+                            onBookmarkClick = { viewModel.toggleBookmark(job.id) },
+                            onCallClick = {
+                                val intent = Intent(Intent.ACTION_DIAL).apply {
+                                    data = "tel:${job.phoneNumber}".toUri()
+                                }
+                                context.startActivity(intent)
+                            },
+                            onLocationClick = {
+                                job.locationLatLng?.let { latLng ->
+                                    val lat = latLng.latitude
+                                    val lng = latLng.longitude
+                                    val gmmIntentUri = "google.navigation:q=$lat,$lng".toUri()
+                                    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+                                    mapIntent.setPackage("com.google.android.apps.maps")
+
+                                    if (mapIntent.resolveActivity(context.packageManager) != null) {
+                                        context.startActivity(mapIntent)
+                                    } else {
+                                        val browserUri =
+                                            "https://www.google.com/maps/dir/?api=1&destination=$lat,$lng".toUri()
+                                        context.startActivity(Intent(Intent.ACTION_VIEW, browserUri))
+                                    }
+                                }
                             }
-                        },
-                        onCallClick = {
-                            // Handle call
-                        }
-                    )
+                        )
+                    }
+                }
+            }
+
+            // Error message
+            jobState.error?.let { error ->
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = error,
+                            color = Color.Red,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
             }
         }

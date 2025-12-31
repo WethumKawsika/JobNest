@@ -9,8 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
-import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,12 +21,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.example.jobnest.main.EDIT_PROFILE_ROUTE
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.jobnest.viewmodel.AuthViewModel
 
 // Premium Color Palette
 private val PrimaryBlue = Color(0xFF2E5BFF)
@@ -39,8 +36,18 @@ private val SoftBackground = Color(0xFFF8F9FD)
 fun ProfileScreen(
     onSwitchView: () -> Unit = {},
     isOwnerView: Boolean = false,
-    navController: NavController
+    onNavigateToEditProfile: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToSecurity: () -> Unit = {},
+    onNavigateToAbout: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    viewModel: AuthViewModel = viewModel()
 ) {
+    val authState by viewModel.authState.collectAsState()
+    val currentUser = authState.currentUserData
+
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
     // Animated floating effect
     val infiniteTransition = rememberInfiniteTransition(label = "float")
     val floatY by infiniteTransition.animateFloat(
@@ -53,81 +60,154 @@ fun ProfileScreen(
         label = "floatY"
     )
 
+    // Logout Confirmation Dialog
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            icon = {
+                Icon(
+                    Icons.Default.Logout,
+                    contentDescription = null,
+                    tint = Color(0xFFDC2626),
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = { Text("Logout", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
+            text = { Text("Are you sure you want to logout?", fontSize = 15.sp) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                    shape = RoundedCornerShape(12.dp)
+                ) { Text("Logout") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(SoftBackground)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Enhanced Header with Gradient
+            // Header with Gradient
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
                         brush = Brush.verticalGradient(
-                            colors = listOf(
-                                LightBlue,
-                                AccentPurple
-                            )
+                            colors = listOf(LightBlue, AccentPurple)
                         )
                     )
             ) {
                 // Floating decorative circles
                 Box(
                     modifier = Modifier
-                        .offset(x = (-30).dp, y = 30.dp + floatY.dp)
-                        .size(100.dp)
+                        .offset(x = (-30).dp, y = 40.dp + floatY.dp)
+                        .size(120.dp)
                         .clip(CircleShape)
                         .background(Color.White.copy(alpha = 0.1f))
-                        .blur(25.dp)
+                        .blur(30.dp)
                 )
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = 30.dp, y = (-10).dp - floatY.dp)
-                        .size(120.dp)
+                        .offset(x = 30.dp, y = (-20).dp - floatY.dp)
+                        .size(150.dp)
                         .clip(CircleShape)
                         .background(PrimaryBlue.copy(alpha = 0.2f))
-                        .blur(30.dp)
+                        .blur(40.dp)
                 )
 
                 Column(
-                    modifier = Modifier.padding(24.dp)
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Profile",
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
-                        )
+                        Column {
+                            Text(
+                                text = if (isOwnerView) "Owner Profile" else "My Profile",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "Manage Your Account",
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 28.sp
+                                ),
+                                color = Color.White
+                            )
+                        }
 
-                        Surface(
-                            onClick = onSwitchView,
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color.White.copy(alpha = 0.2f),
-                            contentColor = Color.White
+
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+
+                    // Profile Avatar
+                    Box(
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(110.dp)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(104.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.linearGradient(
+                                        colors = listOf(
+                                            PrimaryBlue.copy(alpha = 0.2f),
+                                            AccentPurple.copy(alpha = 0.2f)
+                                        )
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = if (isOwnerView) "Student" else "Owner",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
+                                text = currentUser?.fullName?.take(2)?.uppercase() ?: "JN",
+                                fontSize = 40.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = PrimaryBlue
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(Modifier.height(16.dp))
 
                     Text(
-                        text = "Manage your account settings",
+                        text = currentUser?.fullName ?: "JobNest User",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+
+                    Text(
+                        text = currentUser?.email ?: "",
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.9f)
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -145,161 +225,148 @@ fun ProfileScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(24.dp)
-                        .verticalScroll(rememberScrollState()),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    // Profile Avatar with Gradient Ring
-                    Box(
-                        modifier = Modifier.padding(top = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // Gradient ring
-                        Box(
-                            modifier = Modifier
-                                .size(130.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.linearGradient(
-                                        colors = listOf(
-                                            PrimaryBlue,
-                                            AccentPurple
-                                        )
-                                    )
-                                )
-                        )
-                        // White ring
-                        Box(
-                            modifier = Modifier
-                                .size(122.dp)
-                                .clip(CircleShape)
-                                .background(Color.White)
-                        )
-                        // Avatar
-                        Box(
-                            modifier = Modifier
-                                .size(115.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.linearGradient(
-                                        colors = listOf(
-                                            PrimaryBlue.copy(alpha = 0.2f),
-                                            AccentPurple.copy(alpha = 0.2f)
-                                        )
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "JD",
-                                fontSize = 42.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = PrimaryBlue
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
                     Text(
-                        "John Doe",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 26.sp,
+                        text = "Account Settings",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
                         color = Color(0xFF1A1A1A)
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        "john.doe@example.com",
-                        color = Color(0xFF6B7280),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Status Badge
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = PrimaryBlue.copy(alpha = 0.1f)
+                    // Account Settings Section
+                    ProfileMenuItem(
+                        icon = Icons.Default.Person,
+                        title = "Edit Profile",
+                        description = "Update your personal information",
+                        onClick = onNavigateToEditProfile
+                    )
+
+                    ProfileMenuItem(
+                        icon = Icons.Default.Notifications,
+                        title = "Notifications",
+                        description = "Manage notification preferences",
+                        onClick = onNavigateToNotifications
+                    )
+
+                    ProfileMenuItem(
+                        icon = Icons.Default.Security,
+                        title = "Security",
+                        description = "Password and security settings",
+                        onClick = onNavigateToSecurity
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Divider(color = Color(0xFFE2E8F0), thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = "More",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1A1A1A)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // More Section
+                    ProfileMenuItem(
+                        icon = Icons.Default.Info,
+                        title = "About",
+                        description = "Learn more about JobNest",
+                        onClick = onNavigateToAbout
+                    )
+
+                    ProfileMenuItem(
+                        icon = Icons.Default.Help,
+                        title = "Help & Support",
+                        description = "Get help with the app",
+                        onClick = { /* TODO: Help screen */ }
+                    )
+
+                    ProfileMenuItem(
+                        icon = Icons.Default.Share,
+                        title = "Share App",
+                        description = "Share JobNest with friends",
+                        onClick = { /* TODO: Share functionality */ }
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Divider(color = Color(0xFFE2E8F0), thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Logout Button
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showLogoutDialog = true },
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFFEE2E2)
+                        ),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(8.dp)
+                                    .size(44.dp)
                                     .clip(CircleShape)
-                                    .background(PrimaryBlue)
-                            )
-                            Text(
-                                text = if (isOwnerView) "Job Owner" else "Student",
-                                color = PrimaryBlue,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Edit Profile Button
-                    Button(
-                        onClick = { navController.navigate(EDIT_PROFILE_ROUTE) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Transparent
-                        ),
-                        contentPadding = PaddingValues(0.dp),
-                        elevation = ButtonDefaults.buttonElevation(
-                            defaultElevation = 8.dp
-                        )
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    Brush.horizontalGradient(
-                                        colors = listOf(PrimaryBlue, LightBlue)
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .background(Color(0xFFDC2626).copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Edit,
+                                    Icons.Default.Logout,
                                     contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                    tint = Color.White
-                                )
-                                Text(
-                                    "Edit Profile",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    tint = Color(0xFFDC2626),
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
+
+                            Spacer(modifier = Modifier.width(14.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Logout",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFDC2626)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Sign out of your account",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF991B1B),
+                                    lineHeight = 16.sp
+                                )
+                            }
+
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                tint = Color(0xFFDC2626),
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    // Menu Items
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ProfileMenuItem(icon = Icons.Default.Notifications, title = "Notifications") {}
-                        ProfileMenuItem(icon = Icons.Default.Security, title = "Security") {}
-                        ProfileMenuItem(icon = Icons.Default.Info, title = "About") {}
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        ProfileMenuItem(icon = Icons.AutoMirrored.Filled.Logout, title = "Logout", isDestructive = true) {}
-                    }
+                    // App Version
+                    Text(
+                        text = "JobNest v1.0.0",
+                        fontSize = 12.sp,
+                        color = Color(0xFF9CA3AF),
+                        modifier = Modifier.fillMaxWidth(),
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
@@ -307,42 +374,69 @@ fun ProfileScreen(
 }
 
 @Composable
-fun ProfileMenuItem(
-    icon: ImageVector, 
-    title: String, 
-    isDestructive: Boolean = false, 
+private fun ProfileMenuItem(
+    icon: ImageVector,
+    title: String,
+    description: String,
     onClick: () -> Unit
 ) {
-    Row(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = 6.dp)
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFF7FAFC)
+        ),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = title,
-            fontWeight = FontWeight.SemiBold,
-            color = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            modifier = Modifier.size(16.dp)
-        )
-    }
-}
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(colors = listOf(PrimaryBlue, LightBlue))
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
 
-@Preview(showBackground = true)
-@Composable
-fun ProfileScreenPreview() {
-    ProfileScreen(navController = rememberNavController())
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1A1A1A)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = description,
+                    fontSize = 12.sp,
+                    color = Color(0xFF6B7280),
+                    lineHeight = 16.sp
+                )
+            }
+
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = Color(0xFF9CA3AF),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
 }

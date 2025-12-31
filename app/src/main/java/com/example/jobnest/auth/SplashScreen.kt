@@ -4,10 +4,6 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,25 +12,30 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.jobnest.R
+import com.example.jobnest.viewmodel.AuthViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
-    onSplashComplete: () -> Unit = {}
+    authViewModel: AuthViewModel = viewModel(),
+    onLoginNavigate: () -> Unit,
+    onMainNavigate: () -> Unit
 ) {
     var startAnimation by remember { mutableStateOf(false) }
-    
+    val authState by authViewModel.authState.collectAsState()
+
     // Animation values
     val alphaAnimation by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
         animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
         label = "alpha"
     )
-    
+
     val scaleAnimation by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0.8f,
         animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
@@ -56,7 +57,11 @@ fun SplashScreen(
     LaunchedEffect(key1 = true) {
         startAnimation = true
         delay(2500) // Show splash for 2.5 seconds
-        onSplashComplete()
+        if (authState.isAuthenticated) {
+            onMainNavigate()
+        } else {
+            onLoginNavigate()
+        }
     }
 
     Box(
@@ -80,38 +85,24 @@ fun SplashScreen(
                 .alpha(alphaAnimation)
                 .scale(scaleAnimation)
         ) {
-            // Logo with pulse animation
-            Icon(
-                imageVector = Icons.Outlined.AccountCircle, // Using an icon as a placeholder
+            // Logo Image with pulse animation
+            Image(
+                painter = painterResource(id = R.drawable.jobnest_logo), // Your logo drawable
                 contentDescription = "JobNest Logo",
                 modifier = Modifier
-                    .size(280.dp)
+                    .size(380.dp)
                     .scale(if (startAnimation) pulseScale else 1f),
-                tint = Color.White
+                contentScale = ContentScale.Fit
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // App name
-            Text(
-                text = "JobNest",
-                fontSize = 42.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White,
-                letterSpacing = 1.sp
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "Your Career Growth Partner",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.White.copy(alpha = 0.9f),
-                letterSpacing = 0.5.sp
-            )
+
+
+
         }
-        
+
         // Loading indicator at bottom
         Box(
             modifier = Modifier
@@ -127,7 +118,7 @@ fun SplashScreen(
 @Composable
 fun LoadingDots() {
     val infiniteTransition = rememberInfiniteTransition(label = "dots")
-    
+
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -142,7 +133,7 @@ fun LoadingDots() {
                 ),
                 label = "dot$index"
             )
-            
+
             Box(
                 modifier = Modifier
                     .size(12.dp)
@@ -159,5 +150,5 @@ fun LoadingDots() {
 @Preview(showBackground = true, device = "id:pixel_6_pro")
 @Composable
 fun SplashScreenPreview() {
-    SplashScreen()
+    SplashScreen(onLoginNavigate = {}, onMainNavigate = {})
 }

@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,35 +24,76 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.jobnest.R
+import com.example.jobnest.viewmodel.AuthViewModel
 
-// Premium Color Palette
 private val PrimaryBlue = Color(0xFF2E5BFF)
 private val SecondaryPurple = Color(0xFF8E44AD)
 private val AccentPink = Color(0xFFFF6B9D)
-private val DarkBlue = Color(0xFF1A237E)
 private val LightBlue = Color(0xFF667EEA)
-private val SoftWhite = Color(0xFFFAFAFA)
-private val CardWhite = Color(0xFFFFFFFF)
 
 @Composable
 fun LoginScreen(
-    onSignUpClicked: () -> Unit = {},
-    onLoginSuccess: () -> Unit = {},
-    onForgotPasswordClicked: () -> Unit = {}
+    onSignUpClicked: () -> Unit,
+    onStudentLoginSuccess: () -> Unit,
+    onOwnerLoginSuccess: () -> Unit,
+    onForgotPasswordClicked: () -> Unit,
+    onGoogleSignInClicked: () -> Unit,
+    viewModel: AuthViewModel
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var showRoleDialog by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
+    val authState by viewModel.authState.collectAsState()
+
+    // Handle navigation after successful authentication
+    LaunchedEffect(authState.isAuthenticated, authState.currentUserData?.userType) {
+        if (authState.isAuthenticated && authState.currentUserData != null) {
+            val userType = authState.currentUserData?.userType
+
+            if (userType == null) {
+                // New Google user without role - show dialog
+                showRoleDialog = true
+            } else {
+                // Existing user with role - navigate directly
+                when (userType) {
+                    "student" -> onStudentLoginSuccess()
+                    "owner" -> onOwnerLoginSuccess()
+                }
+            }
+        }
+    }
+
+    // Role selection dialog for new Google users
+    if (showRoleDialog) {
+        RoleSelectionDialog(
+            onDismiss = {
+                showRoleDialog = false
+                viewModel.signOut()
+            },
+            onRoleSelected = { role ->
+                showRoleDialog = false
+                viewModel.updateUserRole(role)
+
+                // Navigate based on selected role
+                when (role) {
+                    "student" -> onStudentLoginSuccess()
+                    "owner" -> onOwnerLoginSuccess()
+                }
+            }
+        )
+    }
 
     // Animated floating effect
     val infiniteTransition = rememberInfiniteTransition(label = "float")
@@ -65,6 +105,16 @@ fun LoginScreen(
             repeatMode = RepeatMode.Reverse
         ),
         label = "floatY"
+    )
+
+    val logoPulse by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "logoPulse"
     )
 
     Box(
@@ -108,32 +158,17 @@ fun LoginScreen(
         ) {
             Spacer(modifier = Modifier.height(60.dp))
 
-            // Logo with glow effect
-            Box(
+            Image(
+                painter = painterResource(id = R.drawable.jobnest_logo),
+                contentDescription = "JobNest Logo",
                 modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.3f),
-                                Color.White.copy(alpha = 0.1f)
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.AccountCircle,
-                    contentDescription = "JobNest Logo",
-                    tint = Color.White,
-                    modifier = Modifier.size(80.dp)
-                )
-            }
+                    .size(140.dp)
+                    .scale(logoPulse),
+                contentScale = ContentScale.Fit
+            )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Welcome Text with shadow effect
             Text(
                 text = "Welcome Back!",
                 fontSize = 36.sp,
@@ -154,7 +189,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Modern Glass-morphism Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(32.dp),
@@ -166,6 +200,67 @@ fun LoginScreen(
                 Column(
                     modifier = Modifier.padding(28.dp)
                 ) {
+                    // Google Sign In Button
+                    OutlinedButton(
+                        onClick = onGoogleSignInClicked,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFFE2E8F0)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White,
+                            contentColor = Color(0xFF2D3748)
+                        )
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.google_logo),
+                                contentDescription = "Google Logo",
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                "Continue with Google",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF2D3748)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // OR Divider
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Divider(
+                            modifier = Modifier.weight(1f),
+                            color = Color(0xFFE2E8F0),
+                            thickness = 1.dp
+                        )
+                        Text(
+                            text = "OR",
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF6B7280)
+                        )
+                        Divider(
+                            modifier = Modifier.weight(1f),
+                            color = Color(0xFFE2E8F0),
+                            thickness = 1.dp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
                     // Email Field
                     Text(
                         text = "Email",
@@ -264,12 +359,30 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Sign In Button with gradient
+                    // Error message
+                    authState.error?.let { error ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = error,
+                            color = Color.Red,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Sign In Button
                     Button(
-                        onClick = onLoginSuccess,
+                        onClick = {
+                            if (email.isNotBlank() && password.isNotBlank()) {
+                                viewModel.signInWithEmail(email, password)
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
+                        enabled = !authState.isLoading,
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.Transparent
@@ -291,7 +404,7 @@ fun LoginScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                "Sign In",
+                                if (authState.isLoading) "Signing In..." else "Sign In",
                                 color = Color.White,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold
@@ -325,15 +438,11 @@ fun LoginScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
-}
-
-@Preview(showBackground = true, device = "id:pixel_6_pro")
-@Composable
-fun LoginScreenPreview() {
-    LoginScreen()
 }

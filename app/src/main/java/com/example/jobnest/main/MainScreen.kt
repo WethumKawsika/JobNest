@@ -1,38 +1,35 @@
 package com.example.jobnest.main
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.*
-import com.example.jobnest.main.owner.MyJobsScreen
-import com.example.jobnest.main.owner.PostJobScreen
-import com.example.jobnest.main.screens.HomeScreen
-import com.example.jobnest.main.screens.ProfileScreen
-import com.example.jobnest.main.screens.SavedScreen
-import com.example.jobnest.main.screens.SearchScreen
-import com.example.jobnest.main.screens.common.EditProfileScreen
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.example.jobnest.viewmodel.AuthViewModel
 
 /* ---------------- COLORS ---------------- */
 
@@ -40,123 +37,146 @@ private val PrimaryBlue = Color(0xFF2E5BFF)
 private val AccentPurple = Color(0xFF764BA2)
 private val InactiveGray = Color(0xFF9CA3AF)
 
-/* ---------------- NAV ITEMS ---------------- */
-
-sealed class BottomNavItem(
-    val route: String,
-    val icon: ImageVector,
-    val title: String
-) {
-    object Home : BottomNavItem("home", Icons.Default.Home, "Home")
-    object Search : BottomNavItem("search", Icons.Default.Search, "Search")
-    object Saved : BottomNavItem("saved", Icons.Default.Favorite, "Saved")
-    object MyJobs : BottomNavItem("my_jobs", Icons.AutoMirrored.Filled.List, "My Jobs")
-    object PostJob : BottomNavItem("post_job", Icons.Default.Add, "Post")
-    object Profile : BottomNavItem("profile", Icons.Default.Person, "Profile")
-}
-
-const val EDIT_PROFILE_ROUTE = "edit_profile"
-
 /* ---------------- MAIN SCREEN ---------------- */
 
 @Composable
-fun MainScreen() {
-    val navController = rememberNavController()
-    var isOwnerView by remember { mutableStateOf(false) }
+fun MainScreen(
+    onNavigateToPostJob: () -> Unit,
+    onNavigateToEditProfile: () -> Unit,
+    onLogout: () -> Unit,
+    authViewModel: AuthViewModel = viewModel()
+) {
+    val authState by authViewModel.authState.collectAsState()
+    val isOwner = authState.currentUserData?.userType == "owner"
 
+    val navController = rememberNavController()
+
+    Scaffold(
+        bottomBar = {
+            PremiumNavigationBar(
+                navController = navController,
+                isOwner = isOwner,
+                onNavigateToPostJob = onNavigateToPostJob
+            )
+        }
+    ) { paddingValues ->
+        Box(modifier = Modifier.padding(paddingValues)) {
+            BottomNavGraph(
+                navController = navController,
+                isOwner = isOwner,
+                onNavigateToEditProfile = onNavigateToEditProfile,
+                onLogout = onLogout
+            )
+        }
+    }
+}
+
+/* ---------------- PREMIUM NAVIGATION BAR ---------------- */
+
+@Composable
+fun PremiumNavigationBar(
+    navController: NavHostController,
+    isOwner: Boolean,
+    onNavigateToPostJob: () -> Unit
+) {
     val studentItems = listOf(
         BottomNavItem.Home,
-        BottomNavItem.Search,
         BottomNavItem.Saved,
+        BottomNavItem.Search,
         BottomNavItem.Profile
     )
 
     val ownerItems = listOf(
         BottomNavItem.MyJobs,
-        BottomNavItem.PostJob,
         BottomNavItem.Profile
     )
 
-    Scaffold(
-        bottomBar = {
-            GlassFloatingNavBar(
-                items = if (isOwnerView) ownerItems else studentItems,
-                navController = navController
-            )
-        }
-    ) { padding ->
-        val onSwitchView = {
-            isOwnerView = !isOwnerView
-            val newStartRoute = if (isOwnerView) BottomNavItem.MyJobs.route else BottomNavItem.Home.route
-            navController.navigate(newStartRoute) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
-                }
-                launchSingleTop = true
-                restoreState = true
-            }
-        }
-
-        NavHost(
-            navController = navController,
-            startDestination = BottomNavItem.Home.route,
-            modifier = Modifier.padding(padding)
-        ) {
-            composable(BottomNavItem.Home.route) { HomeScreen(onSwitchView = onSwitchView) }
-            composable(BottomNavItem.Search.route) { SearchScreen() }
-            composable(BottomNavItem.Saved.route) { SavedScreen(onSwitchView = onSwitchView) }
-            composable(BottomNavItem.MyJobs.route) { MyJobsScreen(onSwitchView = onSwitchView, onPostJob = { navController.navigate(BottomNavItem.PostJob.route) }) }
-            composable(BottomNavItem.PostJob.route) { PostJobScreen(onBackPressed = { navController.navigateUp() }, onPostJob = { navController.navigateUp() }) }
-            composable(BottomNavItem.Profile.route) { ProfileScreen(onSwitchView = onSwitchView, isOwnerView = isOwnerView, navController = navController) }
-            composable(EDIT_PROFILE_ROUTE) { EditProfileScreen(navController = navController, onSaveProfile = { navController.navigateUp() }) }
-        }
-    }
-}
-
-/* ---------------- GLASS FLOATING NAV BAR ---------------- */
-
-@Composable
-fun GlassFloatingNavBar(
-    items: List<BottomNavItem>,
-    navController: NavHostController
-) {
+    val items = if (isOwner) ownerItems else studentItems
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    Box(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(90.dp),
-        contentAlignment = Alignment.BottomCenter
+            .height(85.dp),
+        color = Color.Transparent
     ) {
-        Card(
+        Box(
             modifier = Modifier
-                .padding(horizontal = 20.dp, vertical = 14.dp)
-                .fillMaxWidth()
-                .height(64.dp),
-            shape = RoundedCornerShape(30.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.White.copy(alpha = 0.85f)
-            ),
-            elevation = CardDefaults.cardElevation(18.dp)
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.95f),
+                                Color.White.copy(alpha = 0.88f)
+                            )
+                        )
+                    )
+            )
+
             Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.SpaceAround,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                items.forEach { item ->
-                    val selected =
-                        currentDestination?.hierarchy?.any { it.route == item.route } == true
-
-                    GlassNavItem(
-                        item = item,
-                        selected = selected
-                    ) {
-                        navController.navigate(item.route) {
-                            popUpTo(navController.graph.findStartDestination().id)
-                            launchSingleTop = true
+                if (isOwner) {
+                    PremiumNavItem(
+                        icon = Icons.Default.Work,
+                        label = BottomNavItem.MyJobs.title,
+                        selected = currentDestination?.hierarchy?.any { it.route == BottomNavItem.MyJobs.route } == true,
+                        onClick = {
+                            navController.navigate(BottomNavItem.MyJobs.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
+                    )
+                    FloatingActionButton(
+                        icon = Icons.Default.Add,
+                        onClick = onNavigateToPostJob
+                    )
+                    PremiumNavItem(
+                        icon = BottomNavItem.Profile.icon,
+                        label = BottomNavItem.Profile.title,
+                        selected = currentDestination?.hierarchy?.any { it.route == BottomNavItem.Profile.route } == true,
+                        onClick = {
+                            navController.navigate(BottomNavItem.Profile.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    )
+                } else {
+                    items.forEach { screen ->
+                        val icon = if (screen.route == "saved") Icons.Default.Bookmark else screen.icon
+                        PremiumNavItem(
+                            icon = icon,
+                            label = screen.title,
+                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                            onClick = {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -164,59 +184,113 @@ fun GlassFloatingNavBar(
     }
 }
 
-/* ---------------- NAV ITEM ---------------- */
+/* ---------------- PREMIUM NAV ITEM ---------------- */
 
 @Composable
-fun GlassNavItem(
-    item: BottomNavItem,
+fun PremiumNavItem(
+    icon: ImageVector,
+    label: String,
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val lift by animateDpAsState(
-        targetValue = if (selected) (-10).dp else 0.dp,
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
-        label = "lift"
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1f else 0.9f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "scale"
+    )
+
+    val iconSize by animateDpAsState(
+        targetValue = if (selected) 26.dp else 24.dp,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "iconSize"
     )
 
     Column(
         modifier = Modifier
-            .offset(y = lift)
-            .clickable { onClick() },
-        horizontalAlignment = Alignment.CenterHorizontally
+            .scale(scale)
+            .clickable(
+                onClick = onClick,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            )
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Box(
             modifier = Modifier
-                .size(46.dp)
-                .clip(CircleShape)
+                .size(48.dp)
+                .clip(RoundedCornerShape(16.dp))
                 .background(
-                    brush = if (selected)
+                    if (selected) {
                         Brush.linearGradient(
                             colors = listOf(PrimaryBlue, AccentPurple)
                         )
-                    else
+                    } else {
                         Brush.linearGradient(
                             colors = listOf(Color.Transparent, Color.Transparent)
                         )
-                )
-            ,
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = item.icon,
-                contentDescription = item.title,
+                imageVector = icon,
+                contentDescription = label,
                 tint = if (selected) Color.White else InactiveGray,
-                modifier = Modifier.size(if (selected) 26.dp else 24.dp)
+                modifier = Modifier.size(iconSize)
             )
         }
 
-        if (selected) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = item.title,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = PrimaryBlue
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = label,
+            fontSize = if (selected) 12.sp else 11.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            color = if (selected) PrimaryBlue else InactiveGray.copy(alpha = 0.7f)
+        )
+    }
+}
+
+/* ---------------- FLOATING ACTION BUTTON ---------------- */
+
+@Composable
+fun FloatingActionButton(
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    var pressed by remember { mutableStateOf(false) }
+
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.92f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessHigh
+        ),
+        label = "fabScale"
+    )
+
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .scale(scale)
+            .size(64.dp)
+            .clip(CircleShape)
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(Color(0xFF8E44AD), Color(0xFF2E5BFF))
+                )
             )
-        }
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = "Post Job",
+            tint = Color.White,
+            modifier = Modifier.size(32.dp)
+        )
     }
 }

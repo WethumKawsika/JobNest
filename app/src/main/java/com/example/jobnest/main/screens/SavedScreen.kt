@@ -1,5 +1,7 @@
 package com.example.jobnest.main.screens
 
+import android.content.Intent
+import com.example.jobnest.utils.toUIJob
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -17,12 +19,17 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.jobnest.main.screens.common.Job
+import androidx.core.net.toUri
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.jobnest.main.screens.common.JobListItem
+import com.example.jobnest.utils.toUIJob
+import com.example.jobnest.viewmodel.JobViewModel
 
 // Premium Color Palette
 private val PrimaryBlue = Color(0xFF2E5BFF)
@@ -31,25 +38,16 @@ private val AccentPurple = Color(0xFF764BA2)
 private val SoftBackground = Color(0xFFF8F9FD)
 
 @Composable
-fun SavedScreen(onSwitchView: () -> Unit = {}) {
-    // FIXED: Updated with essential job details to match the new Job data class
-    val savedJobs = remember {
-        mutableStateListOf(
-            Job(
-                title = "Delivery Driver",
-                description = "Delivery driver needed for morning shifts. Must have own vehicle.",
-                company = "Delivery Inc.",
-                location = "Galle",
-                salary = "Rs. 1200/day",
-                workType = "Delivery",
-                food = "Not provided",
-                transport = "Must have own bike",
-                workTime = "Morning (8 AM - 12 PM)",
-                requiredPersons = "Male, 2",
-                ageLimit = "18-40",
-                isBookmarked = true
-            )
-        )
+fun SavedScreen(
+    onSwitchView: () -> Unit = {},
+    viewModel: JobViewModel = viewModel()
+) {
+    val jobState by viewModel.jobState.collectAsState()
+    val savedJobsList = jobState.savedJobs
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.loadSavedJobs()
     }
 
     // Animated floating effect
@@ -121,19 +119,7 @@ fun SavedScreen(onSwitchView: () -> Unit = {}) {
                             )
                         }
 
-                        Surface(
-                            onClick = onSwitchView,
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color.White.copy(alpha = 0.2f),
-                            contentColor = Color.White
-                        ) {
-                            Text(
-                                text = "Owner View",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        }
+
                     }
                 }
             }
@@ -147,45 +133,71 @@ fun SavedScreen(onSwitchView: () -> Unit = {}) {
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
             ) {
-                if (savedJobs.isEmpty()) {
-                    // Empty State
-                    EmptySavedState()
-                } else {
-                    // Jobs List
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp)
-                    ) {
-                        // Stats Badge
-                        SavedStatsBadge(savedJobs.size)
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        Text(
-                            text = "Your Collection",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1A1A1A)
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp)
+                when {
+                    savedJobsList.isEmpty() -> {
+                        // Empty State
+                        EmptySavedState()
+                    }
+                    else -> {
+                        // Jobs List
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(24.dp)
                         ) {
-                            items(savedJobs, key = { it.id }) { job ->
-                                JobListItem(
-                                    job = job,
-                                    onBookmarkClick = { updatedJob ->
-                                        // Removes from list when un-bookmarked
-                                        if (!updatedJob.isBookmarked) {
-                                            savedJobs.removeIf { it.id == updatedJob.id }
+                            // Stats Badge
+                            SavedStatsBadge(savedJobsList.size)
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            Text(
+                                text = "Your Collection",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1A1A1A)
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(bottom = 16.dp)
+                            ) {
+                                items(
+                                    items = savedJobsList,
+                                    key = { item -> item.jobId }
+                                ) { job ->
+                                    val jobUi = job.toUIJob(isBookmarked = true)
+                                    JobListItem(
+                                        job = jobUi,
+                                        onBookmarkClick = {
+                                            viewModel.toggleBookmark(jobId = job.jobId)
+                                        },
+                                        onCallClick = {
+                                            val intent = Intent(Intent.ACTION_DIAL).apply {
+                                                data = "tel:${jobUi.phoneNumber}".toUri()
+                                            }
+                                            context.startActivity(intent)
+                                        },
+                                        onLocationClick = {
+                                            jobUi.locationLatLng?.let { latLng ->
+                                                val lat = latLng.latitude
+                                                val lng = latLng.longitude
+                                                val gmmIntentUri = "google.navigation:q=$lat,$lng".toUri()
+                                                val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+                                                mapIntent.setPackage("com.google.android.apps.maps")
+
+                                                if (mapIntent.resolveActivity(context.packageManager) != null) {
+                                                    context.startActivity(mapIntent)
+                                                } else {
+                                                    val browserUri =
+                                                        "https://www.google.com/maps/dir/?api=1&destination=$lat,$lng".toUri()
+                                                    context.startActivity(Intent(Intent.ACTION_VIEW, browserUri))
+                                                }
+                                            }
                                         }
-                                    },
-                                    onCallClick = { /* Handle calling the owner */ }
-                                )
+                                    )
+                                }
                             }
                         }
                     }
@@ -255,12 +267,18 @@ fun EmptySavedState() {
             )
         }
         Spacer(modifier = Modifier.height(24.dp))
-        Text("No Saved Jobs Yet", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Text(
-            "Start bookmarking jobs to see them here",
+            text = "No Saved Jobs Yet",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1A1A1A)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Start bookmarking jobs to see them here",
             fontSize = 15.sp,
             color = Color(0xFF6B7280),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = TextAlign.Center
         )
     }
 }

@@ -1,5 +1,5 @@
 package com.example.jobnest.main.screens
-
+import com.example.jobnest.utils.toUIJob
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -20,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.jobnest.viewmodel.JobViewModel
 
 // Premium Color Palette
 private val PrimaryBlue = Color(0xFF2E5BFF)
@@ -29,7 +31,11 @@ private val SoftBackground = Color(0xFFF8F9FD)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun SearchScreen(onBackClick: () -> Unit = {}, onSwitchView: () -> Unit = {}) {
+fun SearchScreen(
+    onBackClick: () -> Unit = {},
+    onSwitchView: () -> Unit = {},
+    viewModel: JobViewModel = viewModel() // Added viewModel parameter
+) {
     var searchQuery by remember { mutableStateOf("") }
     var salaryRange by remember { mutableStateOf(500f..3000f) }
     var workTypeExpanded by remember { mutableStateOf(false) }
@@ -107,19 +113,7 @@ fun SearchScreen(onBackClick: () -> Unit = {}, onSwitchView: () -> Unit = {}) {
                     color = Color.White
                 )
 
-                Surface(
-                    onClick = onSwitchView,
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.White.copy(alpha = 0.2f),
-                    contentColor = Color.White
-                ) {
-                    Text(
-                        text = "Owner",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
-                    )
-                }
+
             }
         }
 
@@ -162,7 +156,14 @@ fun SearchScreen(onBackClick: () -> Unit = {}, onSwitchView: () -> Unit = {}) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Filters", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        TextButton(onClick = { }) {
+                        TextButton(onClick = {
+                            // Clear all filters
+                            searchQuery = ""
+                            salaryRange = 500f..3000f
+                            selectedWorkType = "Select work type"
+                            selectedLocation = "Select location"
+                            selectedWorkTime = ""
+                        }) {
                             Text("Clear All", color = PrimaryBlue)
                         }
                     }
@@ -209,6 +210,20 @@ fun SearchScreen(onBackClick: () -> Unit = {}, onSwitchView: () -> Unit = {}) {
                                 modifier = Modifier.menuAnchor(),
                                 shape = RoundedCornerShape(12.dp)
                             )
+                            ExposedDropdownMenu(
+                                expanded = workTypeExpanded,
+                                onDismissRequest = { workTypeExpanded = false }
+                            ) {
+                                workTypes.forEach { type ->
+                                    DropdownMenuItem(
+                                        text = { Text(type) },
+                                        onClick = {
+                                            selectedWorkType = type
+                                            workTypeExpanded = false
+                                        }
+                                    )
+                                }
+                            }
                         }
 
                         ExposedDropdownMenuBox(
@@ -224,6 +239,20 @@ fun SearchScreen(onBackClick: () -> Unit = {}, onSwitchView: () -> Unit = {}) {
                                 modifier = Modifier.menuAnchor(),
                                 shape = RoundedCornerShape(12.dp)
                             )
+                            ExposedDropdownMenu(
+                                expanded = locationExpanded,
+                                onDismissRequest = { locationExpanded = false }
+                            ) {
+                                locations.forEach { location ->
+                                    DropdownMenuItem(
+                                        text = { Text(location) },
+                                        onClick = {
+                                            selectedLocation = location
+                                            locationExpanded = false
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -241,7 +270,7 @@ fun SearchScreen(onBackClick: () -> Unit = {}, onSwitchView: () -> Unit = {}) {
                         workTimes.forEach { time ->
                             val isSelected = selectedWorkTime == time
                             Button(
-                                onClick = { selectedWorkTime = time },
+                                onClick = { selectedWorkTime = if (isSelected) "" else time },
                                 modifier = Modifier.height(45.dp),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
@@ -258,7 +287,14 @@ fun SearchScreen(onBackClick: () -> Unit = {}, onSwitchView: () -> Unit = {}) {
 
                 // Bottom section: Apply Button
                 Button(
-                    onClick = { },
+                    onClick = {
+                        // Apply filters using viewModel
+                        // For now, just search with the query
+                        if (searchQuery.isNotBlank()) {
+                            viewModel.searchJobs(searchQuery)
+                        }
+                        onBackClick() // Go back to home screen to see results
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(54.dp),
