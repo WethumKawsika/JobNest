@@ -130,23 +130,7 @@ fun MyJobsScreen(
                                 )
                             }
 
-                            // Modern Switch Button
-                            Surface(
-                                onClick = onSwitchView,
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color.White.copy(alpha = 0.2f),
-                                contentColor = Color.White
-                            ) {
-                                Text(
-                                    text = "Student",
-                                    modifier = Modifier.padding(
-                                        horizontal = 16.dp,
-                                        vertical = 10.dp
-                                    ),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
-                                )
-                            }
+
                         }
 
                         Spacer(Modifier.height(12.dp))

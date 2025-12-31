@@ -119,19 +119,7 @@ fun SavedScreen(
                             )
                         }
 
-                        Surface(
-                            onClick = onSwitchView,
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color.White.copy(alpha = 0.2f),
-                            contentColor = Color.White
-                        ) {
-                            Text(
-                                text = "Owner View",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        }
+
                     }
                 }
             }

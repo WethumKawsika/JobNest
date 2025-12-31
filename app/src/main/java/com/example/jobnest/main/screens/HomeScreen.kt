@@ -131,7 +131,7 @@ fun HomeScreen(
                                 )
                                 Spacer(Modifier.height(4.dp))
                                 Text(
-                                    text = "Find Your Dream Job",
+                                    text = "Find Your PartTime Job",
                                     style = MaterialTheme.typography.headlineMedium.copy(
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 28.sp
@@ -142,18 +142,7 @@ fun HomeScreen(
 
 
                             // Modern Switch Button
-                            Surface(
-                                onClick = onSwitchView,
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color.White.copy(alpha = 0.2f),
-                                contentColor = Color.White
-                            ) {
-                                Text(
-                                    text = "Owner",
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
-                                )}
+
                         }
 
                         Spacer(Modifier.height(12.dp))

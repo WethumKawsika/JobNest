@@ -9,7 +9,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -26,6 +28,7 @@ import com.example.jobnest.main.owner.MapPickerScreen
 import com.example.jobnest.main.owner.MyJobsScreen
 import com.example.jobnest.main.owner.PostJobScreen
 import com.example.jobnest.main.screens.*
+import com.example.jobnest.auth.SignUpScreen
 import com.example.jobnest.ui.theme.JobnestTheme
 import com.example.jobnest.viewmodel.AuthViewModel
 import com.example.jobnest.viewmodel.JobViewModel
@@ -46,7 +49,6 @@ class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
     private lateinit var googleSignInClient: GoogleSignInClient
 
-    // ---------------- GOOGLE SIGN IN ----------------
     private val googleSignInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -63,18 +65,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ---------------- LOCATION PERMISSION ----------------
         if (!hasLocationPermission()) {
             requestLocationPermission()
         }
 
-        // ---------------- FIRESTORE SETTINGS ----------------
         val db = FirebaseFirestore.getInstance()
         db.firestoreSettings = FirebaseFirestoreSettings.Builder()
             .setPersistenceEnabled(true)
             .build()
 
-        // ---------------- GOOGLE SIGN IN CONFIG ----------------
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))
             .requestEmail()
@@ -82,23 +81,19 @@ class MainActivity : ComponentActivity() {
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
-        // ---------------- UI ----------------
         enableEdgeToEdge()
         setContent {
             JobnestTheme {
                 JobNestApp(
                     modifier = Modifier.fillMaxSize(),
                     onGoogleSignInClicked = {
-                        googleSignInLauncher.launch(
-                            googleSignInClient.signInIntent
-                        )
+                        googleSignInLauncher.launch(googleSignInClient.signInIntent)
                     }
                 )
             }
         }
     }
 
-    // ---------------- LOCATION PERMISSION HELPERS ----------------
     private fun hasLocationPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
             this,
@@ -118,10 +113,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// ===================================================================
-// ========================== NAVIGATION ==============================
-// ===================================================================
-
 @Composable
 fun JobNestApp(
     modifier: Modifier = Modifier,
@@ -135,26 +126,25 @@ fun JobNestApp(
     NavHost(navController, startDestination = "splash", modifier = modifier) {
 
         composable("splash") {
-            SplashScreen {
-                navController.navigate("login") {
-                    popUpTo("splash") { inclusive = true }
+            SplashScreen(
+                onLoginNavigate = {
+                    navController.navigate("login") {
+                        popUpTo("splash") { inclusive = true }
+                    }
+                },
+                onMainNavigate = {
+                    navController.navigate("main") {
+                        popUpTo("splash") { inclusive = true }
+                    }
                 }
-            }
+            )
         }
 
         composable("login") {
             LoginScreen(
                 onSignUpClicked = { navController.navigate("signup") },
-                onStudentLoginSuccess = {
-                    navController.navigate("main?userType=student") {
-                        popUpTo("login") { inclusive = true }
-                    }
-                },
-                onOwnerLoginSuccess = {
-                    navController.navigate("main?userType=owner") {
-                        popUpTo("login") { inclusive = true }
-                    }
-                },
+                onStudentLoginSuccess = { navController.navigate("main?userType=student") { popUpTo("login") { inclusive = true } } },
+                onOwnerLoginSuccess = { navController.navigate("main?userType=owner") { popUpTo("login") { inclusive = true } } },
                 onForgotPasswordClicked = { navController.navigate("forgot_password") },
                 onGoogleSignInClicked = onGoogleSignInClicked,
                 viewModel = authViewModel
@@ -164,11 +154,8 @@ fun JobNestApp(
         composable("signup") {
             SignUpScreen(
                 onSignInClicked = { navController.navigate("login") },
-                onSignUpSuccess = {
-                    navController.navigate("main") {
-                        popUpTo(0) { inclusive = true }
-                    }
-                },
+                onStudentSignUpSuccess = { navController.navigate("main?userType=student") { popUpTo(0) { inclusive = true } } },
+                onJobCoordinatorSignUpSuccess = { navController.navigate("main?userType=owner") { popUpTo(0) { inclusive = true } } },
                 viewModel = authViewModel
             )
         }
@@ -180,21 +167,17 @@ fun JobNestApp(
             )
         }
 
-        // ========== NEW SCREENS ==========
         composable("notifications") {
             NotificationsScreen(
                 onBackPressed = { navController.navigateUp() }
             )
         }
 
-
-
         composable("about") {
             AboutScreen(
                 onBackPressed = { navController.navigateUp() }
             )
         }
-        // =================================
 
         composable("main?userType={userType}") { entry ->
             val userType = entry.arguments?.getString("userType")
@@ -221,89 +204,45 @@ fun JobNestApp(
                 onNavigateToAbout = { navController.navigate("about") },
                 onLogout = {
                     authViewModel.signOut()
-                    navController.navigate("login") {
-                        popUpTo("main") { inclusive = true }
-                    }
+                    navController.navigate("login") { popUpTo("main") { inclusive = true } }
                 }
             )
         }
 
         composable("edit_profile") {
-            val backStackEntry = navController.currentBackStackEntry
-            val savedStateHandle = backStackEntry?.savedStateHandle
-
-            val address by savedStateHandle
-                ?.getStateFlow("profile_address", "")
-                ?.collectAsState() ?: remember { mutableStateOf("") }
-
-            val latLng by savedStateHandle
-                ?.getStateFlow<LatLng?>("profile_latlng", null)
-                ?.collectAsState() ?: remember { mutableStateOf<LatLng?>(null) }
-
             EditProfileScreen(
                 onBackPressed = { navController.navigateUp() },
                 onOpenMapPicker = { navController.navigate("map_picker_profile") },
-                selectedAddress = address,
-                selectedLatLng = latLng
+                selectedAddress = "",
+                selectedLatLng = null
             )
         }
 
         composable("map_picker_profile") {
             MapPickerScreen(
-                onLocationSelected = { address, latLng ->
-                    navController.previousBackStackEntry
-                        ?.savedStateHandle
-                        ?.set("profile_address", address)
-                    navController.previousBackStackEntry
-                        ?.savedStateHandle
-                        ?.set("profile_latlng", latLng)
-                    navController.navigateUp()
-                },
+                onLocationSelected = { _, _ -> navController.navigateUp() },
                 onBackPressed = { navController.navigateUp() }
             )
         }
 
         composable("post_job") {
-            val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
-
-            val address by savedStateHandle
-                ?.getStateFlow("selected_address", "")
-                ?.collectAsState() ?: remember { mutableStateOf("") }
-
-            val latLng by savedStateHandle
-                ?.getStateFlow<LatLng?>("selected_latlng", null)
-                ?.collectAsState() ?: remember { mutableStateOf<LatLng?>(null) }
-
             PostJobScreen(
-                selectedAddress = address,
-                selectedLatLng = latLng,
+                selectedAddress = "",
+                selectedLatLng = null,
                 onOpenMapPicker = { navController.navigate("map_picker") },
                 onBackPressed = { navController.navigateUp() },
-                onPostJob = {
-                    navController.previousBackStackEntry
-                        ?.savedStateHandle
-                        ?.set("should_refresh_jobs", true)
-                    navController.navigateUp()
-                }
+                onPostJob = { navController.navigateUp() }
             )
         }
 
         composable("map_picker") {
             MapPickerScreen(
-                onLocationSelected = { address, latLng ->
-                    navController.previousBackStackEntry?.savedStateHandle?.apply {
-                        set("selected_address", address)
-                        set("selected_latlng", latLng)
-                    }
-                    navController.navigateUp()
-                },
+                onLocationSelected = { _, _ -> navController.navigateUp() },
                 onBackPressed = { navController.navigateUp() }
             )
         }
     }
 }
-
-/* ------------------------ MAIN SCREEN ------------------------ */
 
 @Composable
 fun MainScreen(
@@ -319,102 +258,57 @@ fun MainScreen(
     authViewModel: AuthViewModel = viewModel()
 ) {
     val authState by authViewModel.authState.collectAsState()
-
-    val isOwner = initialUserType == "owner" ||
-            authState.currentUserData?.userType == "owner"
-
-    var currentView by remember { mutableStateOf(if (isOwner) "owner" else "student") }
+    val isOwner = initialUserType == "owner" || authState.currentUserData?.userType == "owner"
     var selectedTab by remember { mutableStateOf(0) }
 
     Scaffold(
         bottomBar = {
-            if (currentView == "student") {
-                NavigationBar {
-                    listOf("Home", "Saved", "Search", "Profile").forEachIndexed { i, label ->
+            NavigationBar {
+                if (isOwner) {
+                    val ownerItems = listOf("My Jobs", "Profile")
+                    val ownerIcons = listOf(Icons.Default.Work, Icons.Default.Person)
+                    ownerItems.forEachIndexed { index, label ->
                         NavigationBarItem(
-                            icon = {
-                                Icon(
-                                    listOf(
-                                        Icons.Default.Home,
-                                        Icons.Default.Bookmark,
-                                        Icons.Default.Search,
-                                        Icons.Default.Person
-                                    )[i],
-                                    contentDescription = label
-                                )
-                            },
-                            label = { Text(label) },
-                            selected = selectedTab == i,
-                            onClick = { selectedTab = i }
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            icon = { Icon(ownerIcons[index], contentDescription = label) },
+                            label = { Text(label) }
+                        )
+                    }
+                } else {
+                    val studentItems = listOf("Home", "Saved", "Search", "Profile")
+                    val studentIcons = listOf(Icons.Default.Home, Icons.Default.Bookmark, Icons.Default.Search, Icons.Default.Person)
+                    studentItems.forEachIndexed { index, label ->
+                        NavigationBarItem(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            icon = { Icon(studentIcons[index], contentDescription = label) },
+                            label = { Text(label) }
                         )
                     }
                 }
-            } else {
-                NavigationBar {
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Default.Work, null) },
-                        label = { Text("My Jobs") },
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 }
-                    )
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Default.AddCircle, null) },
-                        label = { Text("Post Job") },
-                        selected = false,
-                        onClick = onNavigateToPostJob
-                    )
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Default.Person, null) },
-                        label = { Text("Profile") },
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 }
-                    )
+            }
+        },
+        floatingActionButton = {
+            if (isOwner) {
+                FloatingActionButton(onClick = onNavigateToPostJob) {
+                    Icon(Icons.Default.Add, contentDescription = "Post Job")
                 }
             }
         }
-    ) { padding ->
-        Box(Modifier.padding(padding)) {
-            when (currentView) {
-                "student" -> when (selectedTab) {
-                    0 -> HomeScreen(
-                        onSwitchView = { currentView = "owner"; selectedTab = 0 },
-                        viewModel = jobViewModel
-                    )
-                    1 -> SavedScreen(
-                        onSwitchView = { currentView = "owner"; selectedTab = 0 },
-                        viewModel = jobViewModel
-                    )
-                    2 -> SearchScreen(
-                        onBackClick = { selectedTab = 0 },
-                        onSwitchView = { currentView = "owner"; selectedTab = 0 },
-                        viewModel = jobViewModel
-                    )
-                    3 -> ProfileScreen(
-                        isOwnerView = false,
-                        onSwitchView = { currentView = "owner"; selectedTab = 0 },
-                        onNavigateToEditProfile = onNavigateToEditProfile,
-                        onNavigateToNotifications = onNavigateToNotifications,
-                        onNavigateToSecurity = onNavigateToSecurity,
-                        onNavigateToAbout = onNavigateToAbout,
-                        onLogout = onLogout
-                    )
+    ) { paddingValues ->
+        Box(modifier = Modifier.padding(paddingValues)) {
+            if (isOwner) {
+                when (selectedTab) {
+                    0 -> MyJobsScreen(onSwitchView = {})
+                    1 -> ProfileScreen(onLogout = onLogout, onNavigateToEditProfile = onNavigateToEditProfile, isOwnerView = true, onSwitchView = {})
                 }
-
-                "owner" -> when (selectedTab) {
-                    0 -> MyJobsScreen(
-                        viewModel = jobViewModel,
-                        refreshTrigger = refreshTrigger,
-                        onSwitchView = { currentView = "student"; selectedTab = 0 }
-                    )
-                    1 -> ProfileScreen(
-                        isOwnerView = true,
-                        onSwitchView = { currentView = "student"; selectedTab = 0 },
-                        onNavigateToEditProfile = onNavigateToEditProfile,
-                        onNavigateToNotifications = onNavigateToNotifications,
-                        onNavigateToSecurity = onNavigateToSecurity,
-                        onNavigateToAbout = onNavigateToAbout,
-                        onLogout = onLogout
-                    )
+            } else { // Student
+                when (selectedTab) {
+                    0 -> HomeScreen(onSwitchView = {})
+                    1 -> SavedScreen(onSwitchView = {})
+                    2 -> SearchScreen(onBackClick = {}, onSwitchView = {})
+                    3 -> ProfileScreen(onLogout = onLogout, onNavigateToEditProfile = onNavigateToEditProfile, isOwnerView = false, onSwitchView = {})
                 }
             }
         }
