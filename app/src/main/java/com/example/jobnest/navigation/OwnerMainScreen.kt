@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -43,7 +44,7 @@ fun OwnerMainScreen(
                         onClick = {
                             selectedItem = index
                             navController.navigate(item.route) {
-                                popUpTo("my_jobs") {
+                                popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
                                 launchSingleTop = true
@@ -68,29 +69,32 @@ fun OwnerMainScreen(
                     refreshTrigger = refreshTrigger
                 )
             }
-
             composable("post_job") {
-                // Use the actual PostJobScreen from com.example.jobnest.main.owner
                 com.example.jobnest.main.owner.PostJobScreen(
                     onBackPressed = {
                         // Navigate back to My Jobs when back button is clicked
-                        selectedItem = 0
-                        refreshTrigger++ // Trigger refresh of MyJobsScreen
+                        selectedItem = 0  // Set My Jobs tab as selected
                         navController.navigate("my_jobs") {
-                            popUpTo("my_jobs") { inclusive = true }
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
                     },
                     onPostJob = {
                         // After successfully posting, navigate to My Jobs
-                        selectedItem = 0
-                        refreshTrigger++ // Trigger refresh of MyJobsScreen
+                        selectedItem = 0  // Set My Jobs tab as selected
+                        refreshTrigger++  // Trigger refresh of MyJobsScreen
                         navController.navigate("my_jobs") {
-                            popUpTo("my_jobs") { inclusive = true }
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
                     },
-                    onOpenMapPicker = {
-                        // TODO: Implement map picker if needed
-                    },
+                    onOpenMapPicker = { },
                     selectedAddress = "",
                     selectedLatLng = null,
                     viewModel = jobViewModel,

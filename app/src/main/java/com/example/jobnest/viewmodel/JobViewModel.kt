@@ -88,7 +88,7 @@ class JobViewModel : ViewModel() {
             }
     }
 
-    fun createJob(job: Job) {
+    fun createJob(job: Job, onSuccess: () -> Unit) {
         viewModelScope.launch {
             val userId = auth.currentUser?.uid
             if (userId == null) {
@@ -107,6 +107,8 @@ class JobViewModel : ViewModel() {
                     "company" to job.company,
                     "contactNumber" to job.contactNumber,
                     "location" to job.location,
+                    "locationLat" to job.locationLat,
+                    "locationLng" to job.locationLng,
                     "minSalary" to job.minSalary,
                     "maxSalary" to job.maxSalary,
                     "workType" to job.workType,
@@ -130,6 +132,7 @@ class JobViewModel : ViewModel() {
                     .await()
 
                 _jobState.value = _jobState.value.copy(isLoading = false)
+                onSuccess()
             } catch (e: Exception) {
                 _jobState.value = _jobState.value.copy(
                     isLoading = false,
@@ -235,8 +238,7 @@ class JobViewModel : ViewModel() {
             try {
                 val bookmarksSnapshot = db.collection("users")
                     .document(userId)
-                    .collection(
-"bookmarks")
+                    .collection("bookmarks")
                     .get()
                     .await()
 

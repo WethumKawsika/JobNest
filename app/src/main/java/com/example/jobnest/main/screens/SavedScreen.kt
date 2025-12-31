@@ -1,5 +1,7 @@
 package com.example.jobnest.main.screens
 
+import android.content.Intent
+import com.example.jobnest.utils.toUIJob
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -17,11 +19,13 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.jobnest.main.screens.common.JobListItem
 import com.example.jobnest.utils.toUIJob
@@ -40,6 +44,7 @@ fun SavedScreen(
 ) {
     val jobState by viewModel.jobState.collectAsState()
     val savedJobsList = jobState.savedJobs
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.loadSavedJobs()
@@ -174,12 +179,35 @@ fun SavedScreen(
                                     items = savedJobsList,
                                     key = { item -> item.jobId }
                                 ) { job ->
+                                    val jobUi = job.toUIJob(isBookmarked = true)
                                     JobListItem(
-                                        job = job.toUIJob(isBookmarked = true),
+                                        job = jobUi,
                                         onBookmarkClick = {
                                             viewModel.toggleBookmark(jobId = job.jobId)
                                         },
-                                        onCallClick = { /* Handle calling the owner */ }
+                                        onCallClick = {
+                                            val intent = Intent(Intent.ACTION_DIAL).apply {
+                                                data = "tel:${jobUi.phoneNumber}".toUri()
+                                            }
+                                            context.startActivity(intent)
+                                        },
+                                        onLocationClick = {
+                                            jobUi.locationLatLng?.let { latLng ->
+                                                val lat = latLng.latitude
+                                                val lng = latLng.longitude
+                                                val gmmIntentUri = "google.navigation:q=$lat,$lng".toUri()
+                                                val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+                                                mapIntent.setPackage("com.google.android.apps.maps")
+
+                                                if (mapIntent.resolveActivity(context.packageManager) != null) {
+                                                    context.startActivity(mapIntent)
+                                                } else {
+                                                    val browserUri =
+                                                        "https://www.google.com/maps/dir/?api=1&destination=$lat,$lng".toUri()
+                                                    context.startActivity(Intent(Intent.ACTION_VIEW, browserUri))
+                                                }
+                                            }
+                                        }
                                     )
                                 }
                             }

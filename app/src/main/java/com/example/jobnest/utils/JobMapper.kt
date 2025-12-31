@@ -9,6 +9,7 @@ fun Job.toUIJob(isBookmarked: Boolean = false): JobUI {
         title = this.title,
         company = this.company,
         location = this.location,
+        locationLatLng = getLatLng(),
         salary = if (this.minSalary > 0 && this.maxSalary > 0) {
             "Rs. ${this.minSalary} - ${this.maxSalary}/day"
         } else {
@@ -17,6 +18,7 @@ fun Job.toUIJob(isBookmarked: Boolean = false): JobUI {
         workType = this.workType,
         workTime = this.workTime,
         food = this.food,
+        phoneNumber = contactNumber,
         transport = this.transport,
         description = this.description,
         requiredPersons = this.requiredPersons,

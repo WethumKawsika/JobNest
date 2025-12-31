@@ -2,6 +2,7 @@ package com.example.jobnest.data
 
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.PropertyName
+import com.google.android.gms.maps.model.LatLng
 
 data class Job(
     val jobId: String = "",
@@ -10,6 +11,8 @@ data class Job(
     val company: String = "",
     val contactNumber: String = "",
     val location: String = "",
+    val locationLat: Double = 0.0,
+    val locationLng: Double = 0.0,
     val minSalary: Int = 0,
     val maxSalary: Int = 0,
     val workType: String = "",
@@ -33,12 +36,19 @@ data class Job(
     @PropertyName("updatedAt")
     val updatedAt: Any? = null // Can be Long or Timestamp
 ) {
+    // Helper function to get LatLng
+    fun getLatLng(): LatLng? {
+        return if (locationLat != 0.0 && locationLng != 0.0) {
+            LatLng(locationLat, locationLng)
+        } else null
+    }
+
     // Helper functions to get timestamps as Long
     fun getCreatedAtLong(): Long {
         return when (createdAt) {
             is Long -> createdAt
             is Timestamp -> createdAt.toDate().time
-            else -> System.currentTimeMillis() // Fallback to current time
+            else -> System.currentTimeMillis()
         }
     }
 
@@ -46,7 +56,7 @@ data class Job(
         return when (updatedAt) {
             is Long -> updatedAt
             is Timestamp -> updatedAt.toDate().time
-            else -> getCreatedAtLong() // Fallback to createdAt
+            else -> getCreatedAtLong()
         }
     }
 }

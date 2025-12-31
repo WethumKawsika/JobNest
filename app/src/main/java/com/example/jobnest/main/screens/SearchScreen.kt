@@ -1,5 +1,5 @@
 package com.example.jobnest.main.screens
-
+import com.example.jobnest.utils.toUIJob
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

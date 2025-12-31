@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.jobnest.viewmodel.AuthViewModel
+import com.google.android.gms.maps.model.LatLng
 
 // Premium Color Palette
 private val PrimaryBlue = Color(0xFF2E5BFF)
@@ -35,11 +36,13 @@ private val SoftBackground = Color(0xFFF8F9FD)
 
 @Composable
 fun EditProfileScreen(
-    viewModel: AuthViewModel, // Make sure this parameter exists
-    onBackPressed: () -> Unit
+    viewModel: AuthViewModel = viewModel(),
+    onBackPressed: () -> Unit,
+    onOpenMapPicker: () -> Unit = {},
+    selectedAddress: String = "",
+    selectedLatLng: LatLng? = null
 ) {
     val authState by viewModel.authState.collectAsState()
-    val currentUser = authState.currentUserData
 
     var fullName by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
@@ -48,12 +51,21 @@ fun EditProfileScreen(
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
+    // Update address when selectedAddress changes from map picker
+    LaunchedEffect(selectedAddress) {
+        if (selectedAddress.isNotEmpty()) {
+            address = selectedAddress
+        }
+    }
+
     // Initialize fields with current user data
     LaunchedEffect(authState.currentUserData) {
         authState.currentUserData?.let { user ->
             fullName = user.fullName
             phoneNumber = user.phoneNumber
-            address = user.address
+            if (address.isEmpty()) { // Don't override if map picker has set it
+                address = user.address
+            }
         }
     }
 
@@ -303,13 +315,10 @@ fun EditProfileScreen(
                             keyboardType = KeyboardType.Phone
                         )
 
-                        ProfileInputField(
-                            label = "Address",
-                            value = address,
-                            onValueChange = { address = it },
-                            icon = Icons.Default.LocationOn,
-                            placeholder = "Enter your address",
-                            minLines = 3
+                        // Address field with map picker
+                        AddressInputField(
+                            address = address,
+                            onOpenMapPicker = onOpenMapPicker
                         )
                     }
 
@@ -441,6 +450,93 @@ private fun ProfileInputField(
         if (!enabled && label == "Email") {
             Spacer(modifier = Modifier.height(6.dp))
             Text("Email cannot be changed", fontSize = 12.sp, color = Color(0xFF9CA3AF), modifier = Modifier.padding(start = 4.dp))
+        }
+    }
+}
+
+@Composable
+private fun AddressInputField(
+    address: String,
+    onOpenMapPicker: () -> Unit
+) {
+    Column {
+        Text(
+            text = "Address",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF2D3748),
+            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+        )
+
+        OutlinedTextField(
+            value = address,
+            onValueChange = {},
+            placeholder = {
+                Text(
+                    "Tap map icon to pick location",
+                    color = Color.Gray,
+                    fontSize = 14.sp
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = PrimaryBlue,
+                    modifier = Modifier.size(22.dp)
+                )
+            },
+            trailingIcon = {
+                IconButton(onClick = onOpenMapPicker) {
+                    Icon(
+                        Icons.Default.Map,
+                        contentDescription = "Pick from map",
+                        tint = PrimaryBlue,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            enabled = false,
+            readOnly = true,
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = PrimaryBlue,
+                unfocusedBorderColor = Color(0xFFE2E8F0),
+                focusedContainerColor = Color(0xFFF7FAFC),
+                unfocusedContainerColor = Color(0xFFF7FAFC),
+                disabledTextColor = Color(0xFF2D3748),
+                disabledBorderColor = Color(0xFFE2E8F0),
+                disabledContainerColor = Color(0xFFF7FAFC)
+            ),
+            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+            singleLine = true
+        )
+
+        if (address.isNotBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = Color(0xFF10B981),
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "Location selected",
+                    fontSize = 12.sp,
+                    color = Color(0xFF10B981),
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }

@@ -424,14 +424,31 @@ fun PostJobScreen(
                     // Post Button
                     Button(
                         onClick = {
-                            if (validateFields(jobTitle, company, contactNumber, minSalary, maxSalary, location, selectedWorkType, selectedWorkTime, selectedFood, selectedTransport, requiredPersons)) {
-                                validationError = null
+                            val errorMessage = getValidationError(
+                                jobTitle = jobTitle,
+                                company = company,
+                                contactNumber = contactNumber,
+                                minSalary = minSalary,
+                                maxSalary = maxSalary,
+                                location = location,
+                                selectedWorkType = selectedWorkType,
+                                selectedWorkTime = selectedWorkTime,
+                                selectedFood = selectedFood,
+                                selectedTransport = selectedTransport,
+                                requiredPersons = requiredPersons,
+                                currentLatLng = currentLatLng
+                            )
+
+                            if (errorMessage == null) {
+                                validationError = null // Clear previous errors
                                 val job = Job(
                                     title = jobTitle,
                                     description = description,
                                     company = company,
                                     contactNumber = contactNumber,
                                     location = location,
+                                    locationLat = currentLatLng?.latitude ?: 0.0,
+                                    locationLng = currentLatLng?.longitude ?: 0.0,
                                     minSalary = minSalary.toIntOrNull() ?: 0,
                                     maxSalary = maxSalary.toIntOrNull() ?: 0,
                                     workType = selectedWorkType,
@@ -443,13 +460,16 @@ fun PostJobScreen(
                                     ageLimit = ageLimit.takeIf { it.isNotBlank() }
                                 )
 
-                                // Set flag that we're posting a job
-                                justPostedJob = true
-
-                                // Create the job
-                                viewModel.createJob(job)
+                                // Create the job and provide the onSuccess lambda for navigation
+                                viewModel.createJob(
+                                    job = job,
+                                    onSuccess = {
+                                        onPostJob() // Navigate back on success
+                                    }
+                                )
                             } else {
-                                validationError = "Please fill in all required fields."
+                                // Show validation error
+                                validationError = errorMessage
                             }
                         },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -459,6 +479,7 @@ fun PostJobScreen(
                         contentPadding = PaddingValues(0.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
                     ) {
+                        // ... (Rest of the Button UI is correct)
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -496,6 +517,8 @@ fun PostJobScreen(
                         }
                     }
 
+                }
+
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Row(Modifier.fillMaxWidth()) {
@@ -528,7 +551,6 @@ fun PostJobScreen(
             }
         }
     }
-}
 
 @Composable
 fun JobInputField(
@@ -537,6 +559,7 @@ fun JobInputField(
     onValueChange: (String) -> Unit,
     leadingIcon: ImageVector,
     placeholder: String,
+
     keyboardType: KeyboardType = KeyboardType.Text
 ) {
     Column {
@@ -572,6 +595,37 @@ fun JobInputField(
             textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
             singleLine = true
         )
+    }
+}
+private fun getValidationError(
+    jobTitle: String,
+    company: String,
+    contactNumber: String,
+    minSalary: String,
+    maxSalary: String,
+    location: String,
+    selectedWorkType: String,
+    selectedWorkTime: String,
+    selectedFood: String,
+    selectedTransport: String,
+    requiredPersons: String,
+    currentLatLng: LatLng?
+): String? {
+    return when {
+        jobTitle.isBlank() -> "Job title cannot be empty."
+        company.isBlank() -> "Company name cannot be empty."
+        contactNumber.isBlank() -> "Contact number cannot be empty."
+        minSalary.isBlank() -> "Minimum salary cannot be empty."
+        maxSalary.isBlank() -> "Maximum salary cannot be empty."
+        minSalary.toIntOrNull() ?: 0 > maxSalary.toIntOrNull() ?: Int.MAX_VALUE -> "Min salary cannot be greater than max salary."
+        location.isBlank() || currentLatLng == null -> "Please select a location from the map."
+        selectedWorkType == "Select work type" -> "Please select a work type."
+        selectedWorkTime == "Select work time" -> "Please select a work time."
+        selectedFood == "Select food availability" -> "Please select food availability."
+        selectedTransport == "Select transport" -> "Please select transport availability."
+        requiredPersons.isBlank() -> "Please specify the number of required persons."
+        requiredPersons.toIntOrNull() == null || (requiredPersons.toIntOrNull() ?: 0) <= 0 -> "Required persons must be a valid number greater than 0."
+        else -> null // All fields are valid
     }
 }
 

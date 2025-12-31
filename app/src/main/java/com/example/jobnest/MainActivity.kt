@@ -180,6 +180,22 @@ fun JobNestApp(
             )
         }
 
+        // ========== NEW SCREENS ==========
+        composable("notifications") {
+            NotificationsScreen(
+                onBackPressed = { navController.navigateUp() }
+            )
+        }
+
+
+
+        composable("about") {
+            AboutScreen(
+                onBackPressed = { navController.navigateUp() }
+            )
+        }
+        // =================================
+
         composable("main?userType={userType}") { entry ->
             val userType = entry.arguments?.getString("userType")
 
@@ -200,6 +216,9 @@ fun JobNestApp(
                 refreshTrigger = jobPostRefreshTrigger,
                 onNavigateToPostJob = { navController.navigate("post_job") },
                 onNavigateToEditProfile = { navController.navigate("edit_profile") },
+                onNavigateToNotifications = { navController.navigate("notifications") },
+                onNavigateToSecurity = { navController.navigate("security") },
+                onNavigateToAbout = { navController.navigate("about") },
                 onLogout = {
                     authViewModel.signOut()
                     navController.navigate("login") {
@@ -210,12 +229,39 @@ fun JobNestApp(
         }
 
         composable("edit_profile") {
+            val backStackEntry = navController.currentBackStackEntry
+            val savedStateHandle = backStackEntry?.savedStateHandle
+
+            val address by savedStateHandle
+                ?.getStateFlow("profile_address", "")
+                ?.collectAsState() ?: remember { mutableStateOf("") }
+
+            val latLng by savedStateHandle
+                ?.getStateFlow<LatLng?>("profile_latlng", null)
+                ?.collectAsState() ?: remember { mutableStateOf<LatLng?>(null) }
+
             EditProfileScreen(
-                viewModel = authViewModel, // Pass the viewModel here
-                onBackPressed = { navController.navigateUp() }
+                onBackPressed = { navController.navigateUp() },
+                onOpenMapPicker = { navController.navigate("map_picker_profile") },
+                selectedAddress = address,
+                selectedLatLng = latLng
             )
         }
 
+        composable("map_picker_profile") {
+            MapPickerScreen(
+                onLocationSelected = { address, latLng ->
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("profile_address", address)
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("profile_latlng", latLng)
+                    navController.navigateUp()
+                },
+                onBackPressed = { navController.navigateUp() }
+            )
+        }
 
         composable("post_job") {
             val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
@@ -266,6 +312,9 @@ fun MainScreen(
     refreshTrigger: Int,
     onNavigateToPostJob: () -> Unit,
     onNavigateToEditProfile: () -> Unit,
+    onNavigateToNotifications: () -> Unit,
+    onNavigateToSecurity: () -> Unit,
+    onNavigateToAbout: () -> Unit,
     onLogout: () -> Unit,
     authViewModel: AuthViewModel = viewModel()
 ) {
@@ -327,8 +376,14 @@ fun MainScreen(
         Box(Modifier.padding(padding)) {
             when (currentView) {
                 "student" -> when (selectedTab) {
-                    0 -> HomeScreen(onSwitchView = { currentView = "owner"; selectedTab = 0 }, viewModel = jobViewModel)
-                    1 -> SavedScreen(onSwitchView = { currentView = "owner"; selectedTab = 0 }, viewModel = jobViewModel)
+                    0 -> HomeScreen(
+                        onSwitchView = { currentView = "owner"; selectedTab = 0 },
+                        viewModel = jobViewModel
+                    )
+                    1 -> SavedScreen(
+                        onSwitchView = { currentView = "owner"; selectedTab = 0 },
+                        viewModel = jobViewModel
+                    )
                     2 -> SearchScreen(
                         onBackClick = { selectedTab = 0 },
                         onSwitchView = { currentView = "owner"; selectedTab = 0 },
@@ -338,6 +393,9 @@ fun MainScreen(
                         isOwnerView = false,
                         onSwitchView = { currentView = "owner"; selectedTab = 0 },
                         onNavigateToEditProfile = onNavigateToEditProfile,
+                        onNavigateToNotifications = onNavigateToNotifications,
+                        onNavigateToSecurity = onNavigateToSecurity,
+                        onNavigateToAbout = onNavigateToAbout,
                         onLogout = onLogout
                     )
                 }
@@ -352,6 +410,9 @@ fun MainScreen(
                         isOwnerView = true,
                         onSwitchView = { currentView = "student"; selectedTab = 0 },
                         onNavigateToEditProfile = onNavigateToEditProfile,
+                        onNavigateToNotifications = onNavigateToNotifications,
+                        onNavigateToSecurity = onNavigateToSecurity,
+                        onNavigateToAbout = onNavigateToAbout,
                         onLogout = onLogout
                     )
                 }
