@@ -71,7 +71,9 @@ fun PostJobScreen(
     var selectedTransport by rememberSaveable { mutableStateOf("Select transport") }
 
     var genderExpanded by rememberSaveable { mutableStateOf(false) }
-    var selectedGender by rememberSaveable { mutableStateOf("Any") }
+    var selectedGender by rememberSaveable { mutableStateOf("Male") }
+    var boysCount by rememberSaveable { mutableStateOf("") }
+    var girlsCount by rememberSaveable { mutableStateOf("") }
 
     var currentLatLng by remember { mutableStateOf<LatLng?>(null) }
     var validationError by rememberSaveable { mutableStateOf<String?>(null) }
@@ -96,7 +98,9 @@ fun PostJobScreen(
         selectedWorkTime = "Select work time"
         selectedFood = "Select food availability"
         selectedTransport = "Select transport"
-        selectedGender = "Any"
+        selectedGender = "Male"
+        boysCount = ""
+        girlsCount = ""
         validationError = null
     }
 
@@ -142,7 +146,7 @@ fun PostJobScreen(
     val workTimes = listOf("Morning", "Afternoon", "Evening", "Night", "Flexible")
     val foodOptions = listOf("None", "Breakfast", "Lunch", "Dinner", "Breakfast & Lunch", "Lunch & Dinner", "All Meals")
     val transportOptions = listOf("Not Provided", "Provided", "Reimbursed")
-    val genderOptions = listOf("Any", "Male", "Female", "Male Preferred", "Female Preferred")
+    val genderOptions = listOf("Male", "Female", "Both")
 
     // Animated floating effect
     val infiniteTransition = rememberInfiniteTransition(label = "float")
@@ -303,40 +307,64 @@ fun PostJobScreen(
 
                         // Gender & Count
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            // Use the shared DropdownField to ensure consistent behavior with other dropdowns
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("👨‍💼 Gender", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2D3748), modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
-                                ExposedDropdownMenuBox(expanded = genderExpanded, onExpandedChange = { genderExpanded = !genderExpanded }) {
-                                    OutlinedTextField(
-                                        value = selectedGender,
-                                        onValueChange = {},
-                                        readOnly = true,
-                                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderExpanded) },
-                                        modifier = Modifier.fillMaxWidth().height(56.dp).menuAnchor(),
-                                        shape = RoundedCornerShape(16.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryBlue, unfocusedBorderColor = Color(0xFFE2E8F0), focusedContainerColor = Color(0xFFF7FAFC), unfocusedContainerColor = Color(0xFFF7FAFC)),
-                                        textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
-                                    )
-                                    ExposedDropdownMenu(expanded = genderExpanded, onDismissRequest = { genderExpanded = false }) {
-                                        genderOptions.forEach { gender ->
-                                            DropdownMenuItem(text = { Text(gender, fontSize = 13.sp) }, onClick = { selectedGender = gender; genderExpanded = false })
-                                        }
-                                    }
-                                }
+                                DropdownField(
+                                    label = "👨‍💼 Gender",
+                                    value = selectedGender,
+                                    expanded = genderExpanded,
+                                    onExpandedChange = { genderExpanded = !genderExpanded },
+                                    items = genderOptions,
+                                    onItemSelected = { selectedGender = it; genderExpanded = false },
+                                    icon = Icons.Default.Person
+                                )
                             }
+
+                            // Count area: either single total or separate boys/girls when Both is selected
                             Column(modifier = Modifier.weight(1f)) {
                                 Text("Count", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2D3748), modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
-                                OutlinedTextField(
-                                    value = requiredPersons,
-                                    onValueChange = { requiredPersons = it },
-                                    placeholder = { Text("e.g., 2", fontSize = 14.sp, color = Color.Gray) },
-                                    leadingIcon = { Icon(Icons.Default.Group, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp)) },
-                                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryBlue, unfocusedBorderColor = Color(0xFFE2E8F0), focusedContainerColor = Color(0xFFF7FAFC), unfocusedContainerColor = Color(0xFFF7FAFC), cursorColor = PrimaryBlue),
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
-                                    singleLine = true
-                                )
+                                if (selectedGender == "Both") {
+                                    // Boys Count
+                                    OutlinedTextField(
+                                        value = boysCount,
+                                        onValueChange = { boysCount = it },
+                                        placeholder = { Text("Boys Count", fontSize = 14.sp, color = Color.Gray) },
+                                        leadingIcon = { Icon(Icons.Default.Male, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp)) },
+                                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryBlue, unfocusedBorderColor = Color(0xFFE2E8F0), focusedContainerColor = Color(0xFFF7FAFC), unfocusedContainerColor = Color(0xFFF7FAFC), cursorColor = PrimaryBlue),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+                                        singleLine = true
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    // Girls Count
+                                    OutlinedTextField(
+                                        value = girlsCount,
+                                        onValueChange = { girlsCount = it },
+                                        placeholder = { Text("Girls Count", fontSize = 14.sp, color = Color.Gray) },
+                                        leadingIcon = { Icon(Icons.Default.Female, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp)) },
+                                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryBlue, unfocusedBorderColor = Color(0xFFE2E8F0), focusedContainerColor = Color(0xFFF7FAFC), unfocusedContainerColor = Color(0xFFF7FAFC), cursorColor = PrimaryBlue),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+                                        singleLine = true
+                                    )
+                                } else {
+                                    OutlinedTextField(
+                                        value = requiredPersons,
+                                        onValueChange = { requiredPersons = it },
+                                        placeholder = { Text("e.g., 2", fontSize = 14.sp, color = Color.Gray) },
+                                        leadingIcon = { Icon(Icons.Default.Group, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp)) },
+                                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryBlue, unfocusedBorderColor = Color(0xFFE2E8F0), focusedContainerColor = Color(0xFFF7FAFC), unfocusedContainerColor = Color(0xFFF7FAFC), cursorColor = PrimaryBlue),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+                                        singleLine = true
+                                    )
+                                }
                             }
                         }
 
@@ -428,7 +456,22 @@ fun PostJobScreen(
                     // Post Button
                     Button(
                         onClick = {
-                            val errorMessage = getValidationError(
+                            // Handle Both case: validate boys/girls counts and compute total
+                            var effectiveRequired = requiredPersons
+                            var preValidationError: String? = null
+                            if (selectedGender == "Both") {
+                                if (boysCount.isBlank() || girlsCount.isBlank()) {
+                                    preValidationError = "Please specify both boys and girls counts."
+                                } else if (boysCount.toIntOrNull() == null || girlsCount.toIntOrNull() == null) {
+                                    preValidationError = "Boys and girls counts must be valid numbers."
+                                } else if ((boysCount.toInt() + girlsCount.toInt()) <= 0) {
+                                    preValidationError = "Total required persons must be greater than 0."
+                                } else {
+                                    effectiveRequired = (boysCount.toInt() + girlsCount.toInt()).toString()
+                                }
+                            }
+
+                            val errorMessage = preValidationError ?: getValidationError(
                                 jobTitle = jobTitle,
                                 company = company,
                                 contactNumber = contactNumber,
@@ -439,7 +482,7 @@ fun PostJobScreen(
                                 selectedWorkTime = selectedWorkTime,
                                 selectedFood = selectedFood,
                                 selectedTransport = selectedTransport,
-                                requiredPersons = requiredPersons,
+                                requiredPersons = effectiveRequired,
                                 currentLatLng = currentLatLng
                             )
 
@@ -459,7 +502,7 @@ fun PostJobScreen(
                                     food = selectedFood,
                                     transport = selectedTransport,
                                     workTime = selectedWorkTime,
-                                    requiredPersons = requiredPersons.toIntOrNull() ?: 1,
+                                    requiredPersons = effectiveRequired.toIntOrNull() ?: 1,
                                     genderPreference = selectedGender,
                                     ageLimit = ageLimit.takeIf { it.isNotBlank() }
                                 )
