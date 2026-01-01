@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "276499813894",
+    "project_id": "jobnest-217d0",
+    "storage_bucket": "jobnest-217d0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:276499813894:android:4d0099aee4d2bd51965587",
+        "android_client_info": {
+          "package_name": "com.example.jobnest"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "276499813894-vtl9e50hmdbhsjbqtu1kg9is84ikvmqr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.jobnest",
+            "certificate_hash": "f25c825c8ac465543154b752de483147b2009175"
+          }
+        },
+        {
+          "client_id": "276499813894-2kh4hrvok22m5c27a3pklt5msavp3qit.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSe9RU-n5LOyvO5SM5qKwrKbCHD_PaN0s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "276499813894-2kh4hrvok22m5c27a3pklt5msavp3qit.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
