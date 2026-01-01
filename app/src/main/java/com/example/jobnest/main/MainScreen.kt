@@ -1,5 +1,8 @@
+@file:Suppress("unused", "UNUSED_VARIABLE", "UNUSED_PARAMETER", "UNUSED_IMPORT")
+
 package com.example.jobnest.main
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,9 +17,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -40,9 +43,8 @@ import com.example.jobnest.viewmodel.JobViewModel
 
 private val PrimaryBlue = Color(0xFF2E5BFF)
 private val AccentPurple = Color(0xFF764BA2)
-private val DarkNavy = Color(0xFF1A1F36)
+private val AccentGreen = Color(0xFF10B981)
 private val InactiveGray = Color(0xFF9CA3AF)
-private val SoftWhite = Color(0xFFF8F9FA)
 
 /* ---------------- NAV ITEMS ---------------- */
 
@@ -71,7 +73,6 @@ fun MainScreen(
     authViewModel: AuthViewModel = viewModel()
 ) {
     val authState by authViewModel.authState.collectAsState()
-    val jobViewModel: JobViewModel = viewModel()
 
     val shouldShowOwnerView = remember(initialUserType, authState.currentUserData?.userType) {
         initialUserType == "owner" || authState.currentUserData?.userType == "owner"
@@ -162,83 +163,55 @@ fun PremiumNavigationBar(
     onTabSelected: (Int) -> Unit,
     onNavigateToPostJob: () -> Unit
 ) {
-    Surface(
+    // New polished container
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(85.dp),
-        color = Color.Transparent
+            .height(90.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
     ) {
+        // Pill background with subtle shadow
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 16.dp)
-        ) {
-            // Background blur effect
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.95f),
-                                Color.White.copy(alpha = 0.88f)
-                            )
-                        )
-                    )
-            )
+                .fillMaxWidth()
+                .height(64.dp)
+                .clip(RoundedCornerShape(32.dp))
+                .background(Color.White)
+                .shadow(elevation = 12.dp, shape = RoundedCornerShape(32.dp))
+        )
 
-            // Content
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (currentView == "student") {
-                    PremiumNavItem(
-                        icon = Icons.Default.Home,
-                        label = "Home",
-                        selected = selectedTab == 0,
-                        onClick = { onTabSelected(0) }
-                    )
-                    PremiumNavItem(
-                        icon = Icons.Default.Bookmark,
-                        label = "Saved",
-                        selected = selectedTab == 1,
-                        onClick = { onTabSelected(1) }
-                    )
-                    PremiumNavItem(
-                        icon = Icons.Default.Search,
-                        label = "Search",
-                        selected = selectedTab == 2,
-                        onClick = { onTabSelected(2) }
-                    )
-                    PremiumNavItem(
-                        icon = Icons.Default.Person,
-                        label = "Profile",
-                        selected = selectedTab == 3,
-                        onClick = { onTabSelected(3) }
-                    )
-                } else {
-                    PremiumNavItem(
-                        icon = Icons.Default.Work,
-                        label = "My Jobs",
-                        selected = selectedTab == 0,
-                        onClick = { onTabSelected(0) }
-                    )
-                    FloatingActionButton(
-                        icon = Icons.Default.Add,
-                        onClick = onNavigateToPostJob
-                    )
-                    PremiumNavItem(
-                        icon = Icons.Default.Person,
-                        label = "Profile",
-                        selected = selectedTab == 1,
-                        onClick = { onTabSelected(1) }
-                    )
-                }
+        // Row of nav items
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (currentView == "student") {
+                PremiumNavItem(icon = Icons.Default.Home, label = "Home", selected = selectedTab == 0, onClick = { onTabSelected(0) })
+                PremiumNavItem(icon = Icons.Default.Bookmark, label = "Saved", selected = selectedTab == 1, onClick = { onTabSelected(1) })
+
+                // Small spacer where center FAB would be in owner view
+                Spacer(modifier = Modifier.width(56.dp))
+
+                PremiumNavItem(icon = Icons.Default.Search, label = "Search", selected = selectedTab == 2, onClick = { onTabSelected(2) })
+                PremiumNavItem(icon = Icons.Default.Person, label = "Profile", selected = selectedTab == 3, onClick = { onTabSelected(3) })
+            } else {
+                PremiumNavItem(icon = Icons.Default.Work, label = "My Jobs", selected = selectedTab == 0, onClick = { onTabSelected(0) })
+
+                // Center space for FAB
+                Spacer(modifier = Modifier.width(12.dp))
+
+                PremiumNavItem(icon = Icons.Default.Person, label = "Profile", selected = selectedTab == 1, onClick = { onTabSelected(1) })
+            }
+        }
+
+        // Floating center action (owner only) - elevated and larger
+        if (currentView != "student") {
+            Box(modifier = Modifier.align(Alignment.TopCenter).offset(y = (-18).dp)) {
+                FloatingActionButton(icon = Icons.Default.Add, onClick = onNavigateToPostJob)
             }
         }
     }
@@ -254,16 +227,13 @@ fun PremiumNavItem(
     onClick: () -> Unit
 ) {
     val scale by animateFloatAsState(
-        targetValue = if (selected) 1f else 0.9f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
+        targetValue = if (selected) 1.05f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "scale"
     )
 
     val iconSize by animateDpAsState(
-        targetValue = if (selected) 26.dp else 24.dp,
+        targetValue = if (selected) 28.dp else 22.dp,
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "iconSize"
     )
@@ -271,48 +241,38 @@ fun PremiumNavItem(
     Column(
         modifier = Modifier
             .scale(scale)
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            )
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .clickable(onClick = onClick, indication = null, interactionSource = remember { MutableInteractionSource() })
+            .padding(horizontal = 6.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Icon background circle when active
+        // Apply brush background when selected, otherwise transparent color
+        val boxModifier = Modifier
+            .size(50.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .let { base ->
+                if (selected) base.background(brush = Brush.linearGradient(listOf(PrimaryBlue, AccentPurple)))
+                else base.background(color = Color.Transparent)
+            }
+
         Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(
-                    if (selected) {
-                        Brush.linearGradient(
-                            colors = listOf(PrimaryBlue, AccentPurple)
-                        )
-                    } else {
-                        Brush.linearGradient(
-                            colors = listOf(Color.Transparent, Color.Transparent)
-                        )
-                    }
-                ),
+            modifier = boxModifier,
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = if (selected) Color.White else InactiveGray,
-                modifier = Modifier.size(iconSize)
-            )
+            Icon(imageVector = icon, contentDescription = label, tint = if (selected) Color.White else InactiveGray, modifier = Modifier.size(iconSize))
         }
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        Text(
-            text = label,
-            fontSize = if (selected) 12.sp else 11.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            color = if (selected) PrimaryBlue else InactiveGray.copy(alpha = 0.7f)
-        )
+        // Animated label visibility
+        AnimatedVisibility(visible = selected) {
+            Text(text = label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = PrimaryBlue)
+        }
+
+        // Active indicator dot
+        if (selected) {
+            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(AccentGreen))
+        }
     }
 }
 
@@ -341,15 +301,11 @@ fun FloatingActionButton(
             .offset(y = (-8).dp)
             .clip(CircleShape)
             .background(
-                brush = Brush.linearGradient(
+                brush = Brush.horizontalGradient(
                     colors = listOf(PrimaryBlue, AccentPurple)
                 )
             )
-            .clickable(
-                onClick = onClick,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ),
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Icon(

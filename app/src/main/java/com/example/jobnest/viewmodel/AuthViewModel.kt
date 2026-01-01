@@ -60,10 +60,8 @@ class AuthViewModel : ViewModel() {
             try {
                 _authState.update { it.copy(isLoading = true) }
 
-                val document = firestore.collection("users")
-                    .document(uid)
-                    .get()
-                    .await()
+                val userRef = firestore.collection("users").document(uid)
+                val document = userRef.get().await()
 
                 if (document.exists()) {
                     val userData = UserData(
@@ -81,18 +79,67 @@ class AuthViewModel : ViewModel() {
                         currentUserData = userData
                     )
                 } else {
+                    // If no Firestore document exists for this user (possible if created via console or missing during sign up),
+                    // create a default user document so that email sign-in proceeds into the app.
+                    val currentUser = auth.currentUser
+                    val email = currentUser?.email ?: ""
+
+                    val defaultMap = hashMapOf(
+                        "uid" to uid,
+                        "email" to email,
+                        "fullName" to (currentUser?.displayName ?: ""),
+                        "phoneNumber" to "",
+                        "address" to "",
+                        "userType" to "student",
+                        "createdAt" to System.currentTimeMillis()
+                    )
+
+                    // Persist default user document
+                    userRef.set(defaultMap).await()
+
+                    val userData = UserData(
+                        uid = uid,
+                        email = email,
+                        fullName = currentUser?.displayName ?: "",
+                        phoneNumber = "",
+                        address = "",
+                        userType = "student"
+                    )
+
                     _authState.value = AuthState(
                         isLoading = false,
                         isAuthenticated = true,
-                        error = "User data not found"
+                        currentUserData = userData
                     )
                 }
             } catch (e: Exception) {
-                _authState.value = AuthState(
-                    isLoading = false,
-                    isAuthenticated = true,
-                    error = e.message
-                )
+                // If fetching user data failed but Firebase auth has a currentUser, allow the app
+                // to proceed (user is authenticated) with a minimal UserData. This helps when
+                // Firestore reads fail transiently but authentication succeeded.
+                val currentUser = auth.currentUser
+                if (currentUser != null) {
+                    val fallbackUser = UserData(
+                        uid = currentUser.uid,
+                        email = currentUser.email ?: "",
+                        fullName = currentUser.displayName ?: "",
+                        phoneNumber = "",
+                        address = "",
+                        userType = null
+                    )
+
+                    _authState.value = AuthState(
+                        isLoading = false,
+                        isAuthenticated = true,
+                        currentUserData = fallbackUser,
+                        error = "Failed to fetch full profile: ${e.message}"
+                    )
+                } else {
+                    _authState.value = AuthState(
+                        isLoading = false,
+                        isAuthenticated = false,
+                        error = e.message
+                    )
+                }
             }
         }
     }
@@ -292,16 +339,37 @@ class AuthViewModel : ViewModel() {
 
     // -------------------- PASSWORD RESET --------------------
 
-    fun resetPassword(email: String) {
+    fun resetPassword(
+        email: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
         viewModelScope.launch {
             try {
-                _authState.update { it.copy(isLoading = true) }
+                _authState.update { it.copy(isLoading = true, error = null) }
+
+                // Send password reset email
                 auth.sendPasswordResetEmail(email).await()
-                _authState.update { it.copy(isLoading = false) }
+
+                // Update state on success
+                _authState.update { it.copy(isLoading = false, error = null) }
+                onSuccess()
+
             } catch (e: Exception) {
-                _authState.update {
-                    it.copy(isLoading = false, error = e.message)
+                val errorMessage = when {
+                    e.message?.contains("no user record", ignoreCase = true) == true ->
+                        "No account found with this email"
+                    e.message?.contains("invalid-email", ignoreCase = true) == true ->
+                        "Invalid email format"
+                    e.message?.contains("network", ignoreCase = true) == true ->
+                        "Network error. Check your connection"
+                    else -> e.message ?: "Failed to send reset email"
                 }
+
+                _authState.update {
+                    it.copy(isLoading = false, error = errorMessage)
+                }
+                onError(errorMessage)
             }
         }
     }

@@ -59,17 +59,23 @@ fun LoginScreen(
 
     // Handle navigation after successful authentication
     LaunchedEffect(authState.isAuthenticated, authState.currentUserData?.userType) {
-        if (authState.isAuthenticated && authState.currentUserData != null) {
-            val userType = authState.currentUserData?.userType
-
-            if (userType == null) {
-                // New Google user without role - show dialog
-                showRoleDialog = true
+        if (authState.isAuthenticated) {
+            val userData = authState.currentUserData
+            if (userData == null) {
+                // Authenticated but profile not fetched yet - allow entry (default to student)
+                onStudentLoginSuccess()
             } else {
-                // Existing user with role - navigate directly
-                when (userType) {
-                    "student" -> onStudentLoginSuccess()
-                    "owner" -> onOwnerLoginSuccess()
+                val userType = userData.userType
+                if (userType == null) {
+                    // New Google user without role - show dialog
+                    showRoleDialog = true
+                } else {
+                    // Existing user with role - navigate directly
+                    when (userType) {
+                        "student" -> onStudentLoginSuccess()
+                        "owner" -> onOwnerLoginSuccess()
+                        else -> onStudentLoginSuccess()
+                    }
                 }
             }
         }
@@ -167,7 +173,7 @@ fun LoginScreen(
                 contentScale = ContentScale.Fit
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(3.dp))
 
             Text(
                 text = "Welcome Back!",
@@ -177,7 +183,7 @@ fun LoginScreen(
                 letterSpacing = 0.5.sp
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = "Sign in to explore amazing opportunities",
@@ -187,18 +193,18 @@ fun LoginScreen(
                 fontWeight = FontWeight.Medium
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(30.dp))
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(32.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color.White.copy(alpha = 0.95f)
+                    containerColor = Color.White.copy(alpha = 0.85f)
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 24.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(28.dp)
+                    modifier = Modifier.padding(10.dp)
                 ) {
                     // Google Sign In Button
                     OutlinedButton(
@@ -223,7 +229,7 @@ fun LoginScreen(
                                 contentDescription = "Google Logo",
                                 modifier = Modifier.size(24.dp)
                             )
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Spacer(modifier = Modifier.width(20.dp))
                             Text(
                                 "Continue with Google",
                                 fontSize = 16.sp,
@@ -233,7 +239,7 @@ fun LoginScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     // OR Divider
                     Row(
@@ -259,7 +265,7 @@ fun LoginScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     // Email Field
                     Text(
@@ -438,11 +444,11 @@ fun LoginScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(22.dp))
         }
     }
 }

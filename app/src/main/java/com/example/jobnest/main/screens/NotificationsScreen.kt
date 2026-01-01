@@ -57,7 +57,7 @@ fun NotificationsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(SoftBackground)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header with Gradient
@@ -66,7 +66,7 @@ fun NotificationsScreen(
                     .fillMaxWidth()
                     .background(
                         brush = Brush.verticalGradient(
-                            colors = listOf(LightBlue, AccentPurple)
+                            colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
                         )
                     )
             ) {
@@ -100,12 +100,12 @@ fun NotificationsScreen(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.2f))
+                            .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.14f))
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color.White,
+                            tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -117,13 +117,13 @@ fun NotificationsScreen(
                             text = "Notifications",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
                         Text(
                             text = "Manage your notification preferences",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color.White.copy(alpha = 0.9f)
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
                         )
                     }
                 }
@@ -135,7 +135,7 @@ fun NotificationsScreen(
                     .fillMaxSize()
                     .offset(y = (-16).dp),
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
             ) {
                 Column(
@@ -185,7 +185,7 @@ fun NotificationsScreen(
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
-                    Divider(color = Color(0xFFE2E8F0), thickness = 1.dp)
+                    Divider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Delivery Methods Section
@@ -213,7 +213,7 @@ fun NotificationsScreen(
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
-                    Divider(color = Color(0xFFE2E8F0), thickness = 1.dp)
+                    Divider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Notification Settings Section
@@ -246,7 +246,7 @@ fun NotificationsScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
-                            containerColor = PrimaryBlue.copy(alpha = 0.1f)
+                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
                         ),
                         shape = RoundedCornerShape(16.dp)
                     ) {
@@ -266,13 +266,13 @@ fun NotificationsScreen(
                                     "Stay Updated",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 15.sp,
-                                    color = Color(0xFF1A1A1A)
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     "Enable notifications to never miss important job opportunities and updates.",
                                     fontSize = 13.sp,
-                                    color = Color(0xFF6B7280),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                                     lineHeight = 18.sp
                                 )
                             }
@@ -299,13 +299,13 @@ private fun SectionHeader(
             modifier = Modifier
                 .size(36.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(PrimaryBlue.copy(alpha = 0.1f)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 icon,
                 contentDescription = null,
-                tint = PrimaryBlue,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -314,7 +314,7 @@ private fun SectionHeader(
             text = title,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1A1A1A)
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -332,7 +332,7 @@ private fun NotificationToggleItem(
             .fillMaxWidth()
             .padding(vertical = 6.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF7FAFC)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -348,16 +348,16 @@ private fun NotificationToggleItem(
                     .clip(CircleShape)
                     .background(
                         if (checked)
-                            Brush.linearGradient(colors = listOf(PrimaryBlue, LightBlue))
+                            Brush.linearGradient(colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary))
                         else
-                            Brush.linearGradient(colors = listOf(Color.Gray.copy(alpha = 0.3f), Color.Gray.copy(alpha = 0.3f)))
+                            Brush.linearGradient(colors = listOf(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)))
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     icon,
                     contentDescription = null,
-                    tint = if (checked) Color.White else Color.Gray,
+                    tint = if (checked) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -369,13 +369,13 @@ private fun NotificationToggleItem(
                     text = title,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A1A)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = description,
                     fontSize = 12.sp,
-                    color = Color(0xFF6B7280),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     lineHeight = 16.sp
                 )
             }
@@ -384,10 +384,10 @@ private fun NotificationToggleItem(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color.White,
-                    checkedTrackColor = PrimaryBlue,
-                    uncheckedThumbColor = Color.White,
-                    uncheckedTrackColor = Color(0xFFE2E8F0)
+                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.onSurface,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.outline
                 )
             )
         }

@@ -28,8 +28,22 @@ fun ForgotPasswordScreen(
     viewModel: AuthViewModel = viewModel()
 ) {
     var email by remember { mutableStateOf("") }
-    val authState by viewModel.authState.collectAsState()
+    var emailError by remember { mutableStateOf("") }
     var showSuccess by remember { mutableStateOf(false) }
+
+    val authState by viewModel.authState.collectAsState()
+
+    // Reset success state when error changes
+    LaunchedEffect(authState.error) {
+        if (authState.error != null) {
+            showSuccess = false
+        }
+    }
+
+    // Function to validate email
+    fun isValidEmail(email: String): Boolean {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
 
     Box(
         modifier = Modifier
@@ -62,7 +76,7 @@ fun ForgotPasswordScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Enter your email address to receive a password reset link.",
+                text = "Enter your email address and we'll send you a link to reset your password.",
                 fontSize = 16.sp,
                 color = Color.White.copy(alpha = 0.9f),
                 textAlign = TextAlign.Center
@@ -70,9 +84,14 @@ fun ForgotPasswordScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Email Input Field
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = {
+                    email = it
+                    emailError = ""
+                    viewModel.clearError()
+                },
                 placeholder = { Text("Enter your email", color = Color.Gray) },
                 leadingIcon = {
                     Icon(
@@ -91,38 +110,111 @@ fun ForgotPasswordScreen(
                     unfocusedContainerColor = Color(0xFFF7FAFC),
                     cursorColor = Color(0xFF2E5BFF)
                 ),
+                isError = emailError.isNotEmpty() || authState.error != null,
                 singleLine = true
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Error message
-            authState.error?.let { error ->
+            // Email validation error
+            if (emailError.isNotEmpty()) {
                 Text(
-                    text = error,
-                    color = Color.Red,
+                    text = emailError,
+                    color = Color(0xFFFF6B6B),
                     fontSize = 12.sp,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 8.dp, top = 4.dp),
+                    textAlign = TextAlign.Start
                 )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Firebase error message
+            authState.error?.let { error ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFF6B6B).copy(alpha = 0.15f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = when {
+                            error.contains("no user record", ignoreCase = true) ->
+                                "No account found with this email address"
+                            error.contains("invalid-email", ignoreCase = true) ->
+                                "Please enter a valid email address"
+                            error.contains("network", ignoreCase = true) ->
+                                "Network error. Please check your connection"
+                            else -> error
+                        },
+                        color = Color(0xFFFF6B6B),
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(12.dp),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
 
             // Success message
-            if (showSuccess && authState.error == null) {
-                Text(
-                    text = "Password reset email sent! Check your inbox.",
-                    color = Color.Green,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-                )
+            if (showSuccess && authState.error == null && !authState.isLoading) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFF4CAF50).copy(alpha = 0.15f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "✓ Email Sent Successfully!",
+                            color = Color(0xFF4CAF50),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Check your inbox for the password reset link",
+                            color = Color(0xFF4CAF50),
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
+            // Send Reset Link Button
             Button(
                 onClick = {
-                    if (email.isNotBlank()) {
-                        showSuccess = true
-                        viewModel.resetPassword(email)
+                    when {
+                        email.isBlank() -> {
+                            emailError = "Email is required"
+                        }
+                        !isValidEmail(email) -> {
+                            emailError = "Please enter a valid email address"
+                        }
+                        else -> {
+                            emailError = ""
+                            showSuccess = false
+                            viewModel.resetPassword(
+                                email = email,
+                                onSuccess = {
+                                    showSuccess = true
+                                },
+                                onError = { error ->
+                                    showSuccess = false
+                                }
+                            )
+                        }
                     }
                 },
                 modifier = Modifier
@@ -139,36 +231,69 @@ fun ForgotPasswordScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
-                            Brush.horizontalGradient(
-                                colors = listOf(Color(0xFF2E5BFF), Color(0xFF667EEA))
-                            )
+                            if (authState.isLoading) {
+                                Brush.horizontalGradient(
+                                    colors = listOf(
+                                        Color(0xFF2E5BFF).copy(alpha = 0.6f),
+                                        Color(0xFF667EEA).copy(alpha = 0.6f)
+                                    )
+                                )
+                            } else {
+                                Brush.horizontalGradient(
+                                    colors = listOf(Color(0xFF2E5BFF), Color(0xFF667EEA))
+                                )
+                            }
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = if (authState.isLoading) "Sending..." else "Send Reset Link",
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (authState.isLoading) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                            Text(
+                                text = "Sending...",
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "Send Reset Link",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
-            LaunchedEffect(showSuccess, authState.error) {
-                if (showSuccess && authState.error == null && !authState.isLoading) {
-                    // Show success message for a bit, then navigate back
-                    kotlinx.coroutines.delay(2000)
-                    onSendClicked(email)
-                }
-            }
+            Spacer(modifier = Modifier.height(24.dp))
 
-            TextButton(onClick = onBackToLoginClicked) {
+            // Back to Login Button
+            TextButton(
+                onClick = onBackToLoginClicked
+            ) {
                 Text(
-                    text = "< Back to Login",
+                    text = "← Back to Login",
                     color = Color.White.copy(alpha = 0.9f),
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
+                    fontSize = 15.sp
                 )
+            }
+
+            // Auto-navigate after success (optional)
+            LaunchedEffect(showSuccess) {
+                if (showSuccess && authState.error == null && !authState.isLoading) {
+                    kotlinx.coroutines.delay(3000)
+                    onBackToLoginClicked()
+                }
             }
         }
     }

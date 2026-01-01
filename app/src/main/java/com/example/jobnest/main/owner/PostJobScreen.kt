@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -36,6 +37,10 @@ private val PrimaryBlue = Color(0xFF2E5BFF)
 private val LightBlue = Color(0xFF667EEA)
 private val AccentPurple = Color(0xFF764BA2)
 private val SoftBackground = Color(0xFFF8F9FD)
+private val DarkText = Color(0xFF1A1A2E)
+private val MutedText = Color(0xFF6B7280)
+private val SuccessGreen = Color(0xFF10B981)
+private val ErrorRed = Color(0xFFDC2626)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,10 +86,8 @@ fun PostJobScreen(
     val jobState by viewModel.jobState.collectAsState()
     val authState by authViewModel.authState.collectAsState()
 
-    // Track if we've successfully posted a job
     var jobPostedSuccessfully by rememberSaveable { mutableStateOf(false) }
 
-    // Function to clear all form fields
     val clearForm = {
         jobTitle = ""
         company = ""
@@ -104,21 +107,18 @@ fun PostJobScreen(
         validationError = null
     }
 
-    // Update location when selectedAddress changes
     LaunchedEffect(selectedAddress) {
         if (selectedAddress.isNotEmpty()) {
             location = selectedAddress
         }
     }
 
-    // Update LatLng when it changes
     LaunchedEffect(selectedLatLng) {
         if (selectedLatLng != null) {
             currentLatLng = selectedLatLng
         }
     }
 
-    // Pre-fill contact number from user profile
     LaunchedEffect(authState.currentUserData) {
         authState.currentUserData?.phoneNumber?.let {
             if (contactNumber.isEmpty() && it.isNotEmpty()) {
@@ -127,18 +127,15 @@ fun PostJobScreen(
         }
     }
 
-    // Clear any existing errors when screen loads
     LaunchedEffect(Unit) {
         viewModel.clearError()
     }
 
-    // Handle successful job posting - clear form and navigate back
     LaunchedEffect(jobState.isLoading, jobState.error) {
         if (jobPostedSuccessfully && !jobState.isLoading && jobState.error == null) {
-            // Clear form after successful posting
             clearForm()
             jobPostedSuccessfully = false
-            onJobPostedSuccessfully() // Notify host (MainActivity) to clear location, refresh and navigate back
+            onJobPostedSuccessfully()
         }
     }
 
@@ -154,10 +151,20 @@ fun PostJobScreen(
         initialValue = 0f,
         targetValue = 15f,
         animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
+            animation = tween(3000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "floatY"
+    )
+
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
     )
 
     Box(
@@ -166,132 +173,198 @@ fun PostJobScreen(
             .background(SoftBackground)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Enhanced Header
+            // Enhanced Header with Gradient
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
                         brush = Brush.verticalGradient(
-                            colors = listOf(LightBlue, AccentPurple)
+                            colors = listOf(LightBlue, AccentPurple),
+                            startY = 0f,
+                            endY = 600f
                         )
                     )
             ) {
-                // Floating circles
+                // Animated background elements
                 Box(
                     modifier = Modifier
-                        .offset(x = (-30).dp, y = 20.dp + floatY.dp)
-                        .size(100.dp)
+                        .offset(x = (-40).dp, y = 10.dp + floatY.dp)
+                        .size(120.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.1f))
-                        .blur(25.dp)
+                        .background(Color.White.copy(alpha = 0.12f))
+                        .blur(30.dp)
                 )
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = 30.dp, y = (-10).dp - floatY.dp)
-                        .size(120.dp)
+                        .offset(x = 40.dp, y = (-20).dp - floatY.dp)
+                        .size(140.dp)
                         .clip(CircleShape)
-                        .background(PrimaryBlue.copy(alpha = 0.2f))
-                        .blur(30.dp)
+                        .background(PrimaryBlue.copy(alpha = 0.25f))
+                        .blur(35.dp)
                 )
 
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .padding(horizontal = 16.dp, vertical = 42.dp)
                 ) {
-                    IconButton(
-                        onClick = onBackPressed,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.2f))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
+                        IconButton(
+                            onClick = onBackPressed,
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.25f))
+                                .shadow(4.dp, CircleShape)
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Post a New Job",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White,
+                                letterSpacing = 0.5.sp
+                            )
+                            Text(
+                                text = "Find the perfect candidates",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White.copy(alpha = 0.9f)
+                            )
+                        }
+
+                        Box(modifier = Modifier.size(44.dp))
                     }
-
-                    Text(
-                        text = "Post a New Job",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
-                    )
-
-                    Box(modifier = Modifier.size(40.dp))
                 }
             }
 
-            // Content Card
+            // Content Card with elevated design
             Card(
                 modifier = Modifier
                     .fillMaxSize()
-                    .offset(y = (-16).dp),
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    .offset(y = (-20).dp),
+                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 20.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(24.dp)
+                        .padding(horizontal = 24.dp, vertical = 28.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
-                    Text(
-                        text = "Fill in the details",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1A1A1A)
-                    )
-                    Text(
-                        text = "Provide complete information about the job",
-                        fontSize = 13.sp,
-                        color = Color(0xFF6B7280),
-                        fontWeight = FontWeight.Medium
-                    )
+                    // Section Header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp, 28.dp)
+                                .background(
+                                    brush = Brush.verticalGradient(
+                                        listOf(PrimaryBlue, AccentPurple)
+                                    ),
+                                    shape = RoundedCornerShape(2.dp)
+                                )
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Job Details",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = DarkText
+                            )
+                            Text(
+                                text = "Provide complete and accurate information",
+                                fontSize = 13.sp,
+                                color = MutedText,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
                     // Form Fields
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(18.dp)
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
                         JobInputField("Job Title", jobTitle, { jobTitle = it }, Icons.Default.Work, "e.g., Delivery Driver")
                         JobInputField("Company Name", company, { company = it }, Icons.Default.Business, "e.g., Food Service Inc.")
-                        JobInputField("📞 Contact Number", contactNumber, { contactNumber = it }, Icons.Default.Phone, "e.g., 0771234567", KeyboardType.Phone)
+                        JobInputField("Contact Number", contactNumber, { contactNumber = it }, Icons.Default.Phone, "e.g., 0771234567", KeyboardType.Phone)
 
-                        // Salary Range
+                        // Salary Range with enhanced design
                         Column {
-                            Text("💰 Salary Range (Rs./day)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2D3748), modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.AttachMoney,
+                                    contentDescription = null,
+                                    tint = PrimaryBlue,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "Salary Range (Rs./day)",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = DarkText
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
                                 OutlinedTextField(
                                     value = minSalary,
                                     onValueChange = { minSalary = it },
-                                    placeholder = { Text("Min", fontSize = 14.sp, color = Color.Gray) },
-                                    leadingIcon = { Icon(Icons.Default.AttachMoney, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp)) },
-                                    modifier = Modifier.weight(1f).height(56.dp),
+                                    placeholder = { Text("Minimum", fontSize = 14.sp, color = MutedText) },
+                                    prefix = { Text("Rs. ", fontSize = 14.sp, color = PrimaryBlue, fontWeight = FontWeight.SemiBold) },
+                                    modifier = Modifier.weight(1f).height(58.dp),
                                     shape = RoundedCornerShape(16.dp),
-                                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryBlue, unfocusedBorderColor = Color(0xFFE2E8F0), focusedContainerColor = Color(0xFFF7FAFC), unfocusedContainerColor = Color(0xFFF7FAFC), cursorColor = PrimaryBlue),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = PrimaryBlue,
+                                        unfocusedBorderColor = Color(0xFFE2E8F0),
+                                        focusedContainerColor = Color(0xFFF7FAFC),
+                                        unfocusedContainerColor = Color(0xFFF7FAFC),
+                                        cursorColor = PrimaryBlue
+                                    ),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+                                    textStyle = LocalTextStyle.current.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
                                     singleLine = true
                                 )
                                 OutlinedTextField(
                                     value = maxSalary,
                                     onValueChange = { maxSalary = it },
-                                    placeholder = { Text("Max", fontSize = 14.sp, color = Color.Gray) },
-                                    modifier = Modifier.weight(1f).height(56.dp),
+                                    placeholder = { Text("Maximum", fontSize = 14.sp, color = MutedText) },
+                                    prefix = { Text("Rs. ", fontSize = 14.sp, color = PrimaryBlue, fontWeight = FontWeight.SemiBold) },
+                                    modifier = Modifier.weight(1f).height(58.dp),
                                     shape = RoundedCornerShape(16.dp),
-                                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryBlue, unfocusedBorderColor = Color(0xFFE2E8F0), focusedContainerColor = Color(0xFFF7FAFC), unfocusedContainerColor = Color(0xFFF7FAFC), cursorColor = PrimaryBlue),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = PrimaryBlue,
+                                        unfocusedBorderColor = Color(0xFFE2E8F0),
+                                        focusedContainerColor = Color(0xFFF7FAFC),
+                                        unfocusedContainerColor = Color(0xFFF7FAFC),
+                                        cursorColor = PrimaryBlue
+                                    ),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+                                    textStyle = LocalTextStyle.current.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
                                     singleLine = true
                                 )
                             }
@@ -306,8 +379,10 @@ fun PostJobScreen(
                         DropdownField("🚗 Transport", selectedTransport, transportExpanded, { transportExpanded = !transportExpanded }, transportOptions, { selectedTransport = it; transportExpanded = false }, Icons.Default.DirectionsCar)
 
                         // Gender & Count
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            // Use the shared DropdownField to ensure consistent behavior with other dropdowns
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 DropdownField(
                                     label = "👨‍💼 Gender",
@@ -320,48 +395,78 @@ fun PostJobScreen(
                                 )
                             }
 
-                            // Count area: either single total or separate boys/girls when Both is selected
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Count", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2D3748), modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        Icons.Default.Group,
+                                        contentDescription = null,
+                                        tint = PrimaryBlue,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        "Count",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = DarkText
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
                                 if (selectedGender == "Both") {
-                                    // Boys Count
                                     OutlinedTextField(
                                         value = boysCount,
                                         onValueChange = { boysCount = it },
-                                        placeholder = { Text("Boys Count", fontSize = 14.sp, color = Color.Gray) },
+                                        placeholder = { Text("Boys", fontSize = 14.sp, color = MutedText) },
                                         leadingIcon = { Icon(Icons.Default.Male, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp)) },
-                                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                                        modifier = Modifier.fillMaxWidth().height(58.dp),
                                         shape = RoundedCornerShape(16.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryBlue, unfocusedBorderColor = Color(0xFFE2E8F0), focusedContainerColor = Color(0xFFF7FAFC), unfocusedContainerColor = Color(0xFFF7FAFC), cursorColor = PrimaryBlue),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = PrimaryBlue,
+                                            unfocusedBorderColor = Color(0xFFE2E8F0),
+                                            focusedContainerColor = Color(0xFFF7FAFC),
+                                            unfocusedContainerColor = Color(0xFFF7FAFC),
+                                            cursorColor = PrimaryBlue
+                                        ),
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+                                        textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
                                         singleLine = true
                                     )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    // Girls Count
+                                    Spacer(modifier = Modifier.height(10.dp))
                                     OutlinedTextField(
                                         value = girlsCount,
                                         onValueChange = { girlsCount = it },
-                                        placeholder = { Text("Girls Count", fontSize = 14.sp, color = Color.Gray) },
+                                        placeholder = { Text("Girls", fontSize = 14.sp, color = MutedText) },
                                         leadingIcon = { Icon(Icons.Default.Female, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp)) },
-                                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                                        modifier = Modifier.fillMaxWidth().height(58.dp),
                                         shape = RoundedCornerShape(16.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryBlue, unfocusedBorderColor = Color(0xFFE2E8F0), focusedContainerColor = Color(0xFFF7FAFC), unfocusedContainerColor = Color(0xFFF7FAFC), cursorColor = PrimaryBlue),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = PrimaryBlue,
+                                            unfocusedBorderColor = Color(0xFFE2E8F0),
+                                            focusedContainerColor = Color(0xFFF7FAFC),
+                                            unfocusedContainerColor = Color(0xFFF7FAFC),
+                                            cursorColor = PrimaryBlue
+                                        ),
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+                                        textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
                                         singleLine = true
                                     )
                                 } else {
                                     OutlinedTextField(
                                         value = requiredPersons,
                                         onValueChange = { requiredPersons = it },
-                                        placeholder = { Text("e.g., 2", fontSize = 14.sp, color = Color.Gray) },
+                                        placeholder = { Text("e.g., 2", fontSize = 14.sp, color = MutedText) },
                                         leadingIcon = { Icon(Icons.Default.Group, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp)) },
-                                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                                        modifier = Modifier.fillMaxWidth().height(58.dp),
                                         shape = RoundedCornerShape(16.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryBlue, unfocusedBorderColor = Color(0xFFE2E8F0), focusedContainerColor = Color(0xFFF7FAFC), unfocusedContainerColor = Color(0xFFF7FAFC), cursorColor = PrimaryBlue),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = PrimaryBlue,
+                                            unfocusedBorderColor = Color(0xFFE2E8F0),
+                                            focusedContainerColor = Color(0xFFF7FAFC),
+                                            unfocusedContainerColor = Color(0xFFF7FAFC),
+                                            cursorColor = PrimaryBlue
+                                        ),
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+                                        textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
                                         singleLine = true
                                     )
                                 }
@@ -370,93 +475,62 @@ fun PostJobScreen(
 
                         JobInputField("🎂 Age Limit (Optional)", ageLimit, { ageLimit = it }, Icons.Default.Cake, "e.g., 18-35", KeyboardType.Text)
 
-                        // Description
+                        // Description with enhanced design
                         Column {
-                            Text("Job Description", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2D3748), modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.Description,
+                                    contentDescription = null,
+                                    tint = PrimaryBlue,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "Job Description",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = DarkText
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
                             OutlinedTextField(
                                 value = description,
                                 onValueChange = { description = it },
-                                placeholder = { Text("Describe the job requirements and responsibilities", color = Color.Gray, fontSize = 14.sp) },
-                                leadingIcon = { Icon(Icons.Default.Description, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(22.dp)) },
-                                modifier = Modifier.fillMaxWidth().height(120.dp),
+                                placeholder = { Text("Describe the job requirements and responsibilities in detail", color = MutedText, fontSize = 14.sp) },
+                                modifier = Modifier.fillMaxWidth().height(140.dp),
                                 shape = RoundedCornerShape(16.dp),
-                                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryBlue, unfocusedBorderColor = Color(0xFFE2E8F0), focusedContainerColor = Color(0xFFF7FAFC), unfocusedContainerColor = Color(0xFFF7FAFC), cursorColor = PrimaryBlue),
-                                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
-                                maxLines = 5
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = PrimaryBlue,
+                                    unfocusedBorderColor = Color(0xFFE2E8F0),
+                                    focusedContainerColor = Color(0xFFF7FAFC),
+                                    unfocusedContainerColor = Color(0xFFF7FAFC),
+                                    cursorColor = PrimaryBlue
+                                ),
+                                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp, lineHeight = 22.sp),
+                                maxLines = 6
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     // Show validation errors
                     validationError?.let { error ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFFEE2E2)
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.Error,
-                                    contentDescription = null,
-                                    tint = Color(0xFFDC2626),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = error,
-                                    color = Color(0xFFDC2626),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
+                        ErrorCard(error)
+                        Spacer(modifier = Modifier.height(12.dp))
                     }
 
-                    // Show job posting errors from ViewModel
+                    // Show job posting errors
                     jobState.error?.let { error ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFFEE2E2)
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.Error,
-                                    contentDescription = null,
-                                    tint = Color(0xFFDC2626),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = error,
-                                    color = Color(0xFFDC2626),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
+                        ErrorCard(error)
+                        Spacer(modifier = Modifier.height(12.dp))
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
-                    // Post Button
+                    // Post Button with gradient and animation
                     Button(
                         onClick = {
-                            // Handle Both case: validate boys/girls counts and compute total
                             var effectiveRequired = requiredPersons
                             var preValidationError: String? = null
                             if (selectedGender == "Both") {
@@ -487,7 +561,7 @@ fun PostJobScreen(
                             )
 
                             if (errorMessage == null) {
-                                validationError = null // Clear validation errors
+                                validationError = null
                                 val job = Job(
                                     title = jobTitle,
                                     description = description,
@@ -504,10 +578,13 @@ fun PostJobScreen(
                                     workTime = selectedWorkTime,
                                     requiredPersons = effectiveRequired.toIntOrNull() ?: 1,
                                     genderPreference = selectedGender,
-                                    ageLimit = ageLimit.takeIf { it.isNotBlank() }
+                                    ageLimit = ageLimit.takeIf { it.isNotBlank() },
+                                    boysCount = if (selectedGender == "Both") boysCount.toIntOrNull() else null,
+                                    girlsCount = if (selectedGender == "Both") girlsCount.toIntOrNull() else null,
+                                    ownerName = authState.currentUserData?.fullName ?: "",
+                                    ownerPhone = contactNumber
                                 )
 
-                                // Create the job and set flag to clear form on success
                                 viewModel.createJob(
                                     job = job,
                                     onSuccess = {
@@ -515,23 +592,24 @@ fun PostJobScreen(
                                     }
                                 )
                             } else {
-                                // Show validation error
                                 validationError = errorMessage
                             }
                         },
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp)
+                            .shadow(8.dp, RoundedCornerShape(18.dp)),
                         enabled = !jobState.isLoading,
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(18.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                        contentPadding = PaddingValues(0.dp),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+                        contentPadding = PaddingValues(0.dp)
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(
                                     Brush.horizontalGradient(
-                                        colors = listOf(PrimaryBlue, LightBlue)
+                                        colors = listOf(PrimaryBlue, LightBlue, AccentPurple)
                                     )
                                 ),
                             contentAlignment = Alignment.Center
@@ -539,60 +617,125 @@ fun PostJobScreen(
                             if (jobState.isLoading) {
                                 CircularProgressIndicator(
                                     color = Color.White,
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier.size(26.dp),
+                                    strokeWidth = 3.dp
                                 )
                             } else {
                                 Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.CheckCircle,
                                         contentDescription = null,
-                                        modifier = Modifier.size(22.dp),
+                                        modifier = Modifier.size(24.dp),
                                         tint = Color.White
                                     )
                                     Text(
                                         "Post Job",
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White
+                                        color = Color.White,
+                                        letterSpacing = 0.5.sp
                                     )
                                 }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    Row(Modifier.fillMaxWidth()) {
-                        TextButton(
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
                             onClick = onBackPressed,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE2E8F0)),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MutedText)
                         ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 "Cancel",
                                 fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF6B7280)
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
-                        TextButton(
+                        OutlinedButton(
                             onClick = clearForm,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, PrimaryBlue),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue)
                         ) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 "Clear",
                                 fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = PrimaryBlue
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ErrorCard(error: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFEF2F2)
+        ),
+        shape = RoundedCornerShape(14.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(ErrorRed.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Error,
+                    contentDescription = null,
+                    tint = ErrorRed,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = error,
+                color = ErrorRed,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 18.sp
+            )
         }
     }
 }
@@ -607,26 +750,27 @@ fun JobInputField(
     keyboardType: KeyboardType = KeyboardType.Text
 ) {
     Column {
-        Text(
-            text = label,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF2D3748),
-            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                leadingIcon,
+                contentDescription = null,
+                tint = PrimaryBlue,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = label,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = DarkText
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(placeholder, color = Color.Gray, fontSize = 14.sp) },
-            leadingIcon = {
-                Icon(
-                    leadingIcon,
-                    contentDescription = null,
-                    tint = PrimaryBlue,
-                    modifier = Modifier.size(22.dp)
-                )
-            },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
+            placeholder = { Text(placeholder, color = MutedText, fontSize = 14.sp) },
+            modifier = Modifier.fillMaxWidth().height(58.dp),
             shape = RoundedCornerShape(16.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = PrimaryBlue,
@@ -636,7 +780,7 @@ fun JobInputField(
                 cursorColor = PrimaryBlue
             ),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+            textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
             singleLine = true
         )
     }
@@ -662,7 +806,7 @@ private fun getValidationError(
         contactNumber.isBlank() -> "Contact number cannot be empty."
         minSalary.isBlank() -> "Minimum salary cannot be empty."
         maxSalary.isBlank() -> "Maximum salary cannot be empty."
-        minSalary.toIntOrNull() ?: 0 > maxSalary.toIntOrNull() ?: Int.MAX_VALUE -> "Min salary cannot be greater than max salary."
+        (minSalary.toIntOrNull() ?: 0) > (maxSalary.toIntOrNull() ?: Int.MAX_VALUE) -> "Min salary cannot be greater than max salary."
         location.isBlank() || currentLatLng == null -> "Please select a location from the map."
         selectedWorkType == "Select work type" -> "Please select a work type."
         selectedWorkTime == "Select work time" -> "Please select a work time."
@@ -670,7 +814,7 @@ private fun getValidationError(
         selectedTransport == "Select transport" -> "Please select transport availability."
         requiredPersons.isBlank() -> "Please specify the number of required persons."
         requiredPersons.toIntOrNull() == null || (requiredPersons.toIntOrNull() ?: 0) <= 0 -> "Required persons must be a valid number greater than 0."
-        else -> null // All fields are valid
+        else -> null
     }
 }
 
@@ -686,13 +830,22 @@ fun DropdownField(
     icon: ImageVector
 ) {
     Column {
-        Text(
-            text = label,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF2D3748),
-            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = PrimaryBlue,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = label,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = DarkText
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = onExpandedChange
@@ -701,20 +854,12 @@ fun DropdownField(
                 value = value,
                 onValueChange = {},
                 readOnly = true,
-                leadingIcon = {
-                    Icon(
-                        icon,
-                        contentDescription = null,
-                        tint = PrimaryBlue,
-                        modifier = Modifier.size(22.dp)
-                    )
-                },
                 trailingIcon = {
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
+                    .height(58.dp)
                     .menuAnchor(),
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -723,7 +868,7 @@ fun DropdownField(
                     focusedContainerColor = Color(0xFFF7FAFC),
                     unfocusedContainerColor = Color(0xFFF7FAFC)
                 ),
-                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp)
+                textStyle = LocalTextStyle.current.copy(fontSize = 15.sp)
             )
             ExposedDropdownMenu(
                 expanded = expanded,
@@ -743,42 +888,49 @@ fun DropdownField(
 @Composable
 private fun LocationInputField(location: String, onOpenMapPicker: () -> Unit) {
     Column {
-        Text(
-            "📍 Location",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF2D3748),
-            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Default.LocationOn,
+                contentDescription = null,
+                tint = PrimaryBlue,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                "Location",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = DarkText
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
         OutlinedTextField(
             value = location,
             onValueChange = {},
             placeholder = {
                 Text(
-                    "Tap map icon to pick location",
-                    color = Color.Gray,
+                    "Tap map icon to select location",
+                    color = MutedText,
                     fontSize = 14.sp
                 )
             },
-            leadingIcon = {
-                Icon(
-                    Icons.Default.LocationOn,
-                    contentDescription = null,
-                    tint = PrimaryBlue,
-                    modifier = Modifier.size(22.dp)
-                )
-            },
             trailingIcon = {
-                IconButton(onClick = onOpenMapPicker) {
+                IconButton(
+                    onClick = onOpenMapPicker,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(PrimaryBlue.copy(alpha = 0.1f))
+                ) {
                     Icon(
                         Icons.Default.Map,
                         contentDescription = "Pick from map",
                         tint = PrimaryBlue,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
+            modifier = Modifier.fillMaxWidth().height(58.dp),
             enabled = false,
             readOnly = true,
             shape = RoundedCornerShape(16.dp),
@@ -787,34 +939,48 @@ private fun LocationInputField(location: String, onOpenMapPicker: () -> Unit) {
                 unfocusedBorderColor = Color(0xFFE2E8F0),
                 focusedContainerColor = Color(0xFFF7FAFC),
                 unfocusedContainerColor = Color(0xFFF7FAFC),
-                disabledTextColor = Color(0xFF2D3748),
+                disabledTextColor = DarkText,
                 disabledBorderColor = Color(0xFFE2E8F0),
                 disabledContainerColor = Color(0xFFF7FAFC)
             ),
-            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+            textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
             singleLine = true
         )
         if (location.isNotBlank()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Spacer(modifier = Modifier.height(10.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = SuccessGreen.copy(alpha = 0.08f)
+                ),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(
-                    Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = Color(0xFF10B981),
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    "Location selected",
-                    fontSize = 12.sp,
-                    color = Color(0xFF10B981),
-                    fontWeight = FontWeight.Medium
-                )
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(SuccessGreen.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = SuccessGreen,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        "Location successfully selected",
+                        fontSize = 13.sp,
+                        color = SuccessGreen,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
     }

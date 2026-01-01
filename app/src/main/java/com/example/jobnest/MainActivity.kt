@@ -1,4 +1,5 @@
 package com.example.jobnest
+
 import com.example.jobnest.viewmodel.LocationViewModel
 import android.Manifest
 import android.content.pm.PackageManager
@@ -9,14 +10,28 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -28,7 +43,6 @@ import com.example.jobnest.main.owner.MapPickerScreen
 import com.example.jobnest.main.owner.MyJobsScreen
 import com.example.jobnest.main.owner.PostJobScreen
 import com.example.jobnest.main.screens.*
-import com.example.jobnest.auth.SignUpScreen
 import com.example.jobnest.ui.theme.JobnestTheme
 import com.example.jobnest.viewmodel.AuthViewModel
 import com.example.jobnest.viewmodel.JobViewModel
@@ -39,6 +53,14 @@ import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
+
+// Premium Color Palette
+private val PrimaryBlue = Color(0xFF2E5BFF)
+private val LightBlue = Color(0xFF667EEA)
+private val AccentPurple = Color(0xFF764BA2)
+private val AccentGreen = Color(0xFF10B981)
+private val InactiveGray = Color(0xFF9CA3AF)
+private val SoftBackground = Color(0xFFF8F9FD)
 
 class MainActivity : ComponentActivity() {
 
@@ -241,13 +263,11 @@ fun JobNestApp(
                 onBackPressed = { navController.navigateUp() },
                 onJobPostedSuccessfully = {
                     locationViewModel.clearLocation()
-                    // Let the MainScreen know it should refresh the job list
                     navController.previousBackStackEntry
                         ?.savedStateHandle
                         ?.set("should_refresh_jobs", true)
                     navController.navigateUp()
                 }
-
             )
         }
 
@@ -260,7 +280,6 @@ fun JobNestApp(
                         set("selected_lng", latLng.longitude)
                     }
                     locationViewModel.setLocation(address, latLng)
-
                     navController.navigateUp()
                 },
                 onBackPressed = { navController.navigateUp() }
@@ -287,55 +306,347 @@ fun MainScreen(
     var selectedTab by remember { mutableStateOf(0) }
 
     Scaffold(
+        containerColor = SoftBackground,
         bottomBar = {
-            NavigationBar {
-                if (isOwner) {
-                    val ownerItems = listOf("My Jobs", "Profile")
-                    val ownerIcons = listOf(Icons.Default.Work, Icons.Default.Person)
-                    ownerItems.forEachIndexed { index, label ->
-                        NavigationBarItem(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            icon = { Icon(ownerIcons[index], contentDescription = label) },
-                            label = { Text(label) }
-                        )
-                    }
-                } else {
-                    val studentItems = listOf("Home", "Saved", "Search", "Profile")
-                    val studentIcons = listOf(Icons.Default.Home, Icons.Default.Bookmark, Icons.Default.Search, Icons.Default.Person)
-                    studentItems.forEachIndexed { index, label ->
-                        NavigationBarItem(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            icon = { Icon(studentIcons[index], contentDescription = label) },
-                            label = { Text(label) }
-                        )
-                    }
-                }
-            }
-        },
-        floatingActionButton = {
-            if (isOwner) {
-                FloatingActionButton(onClick = onNavigateToPostJob) {
-                    Icon(Icons.Default.Add, contentDescription = "Post Job")
-                }
-            }
+            PremiumBottomNavigationBar(
+                isOwner = isOwner,
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it },
+                onNavigateToPostJob = onNavigateToPostJob
+            )
         }
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
             if (isOwner) {
                 when (selectedTab) {
-                    0 -> MyJobsScreen(onSwitchView = {})
-                    1 -> ProfileScreen(onLogout = onLogout, onNavigateToEditProfile = onNavigateToEditProfile, isOwnerView = true, onSwitchView = {})
+                    0 -> MyJobsScreen(
+                        onSwitchView = {},
+                        refreshTrigger = refreshTrigger
+                    )
+                    1 -> ProfileScreen(
+                        onLogout = onLogout,
+                        onNavigateToEditProfile = onNavigateToEditProfile,
+                        onNavigateToNotifications = onNavigateToNotifications,
+                        onNavigateToSecurity = onNavigateToSecurity,
+                        onNavigateToAbout = onNavigateToAbout,
+                        isOwnerView = true,
+                        onSwitchView = {}
+                    )
                 }
-            } else { // Student
+            } else {
                 when (selectedTab) {
-                    0 -> HomeScreen(onSwitchView = {})
-                    1 -> SavedScreen(onSwitchView = {})
-                    2 -> SearchScreen(onBackClick = {}, onSwitchView = {})
-                    3 -> ProfileScreen(onLogout = onLogout, onNavigateToEditProfile = onNavigateToEditProfile, isOwnerView = false, onSwitchView = {})
+                    0 -> HomeScreen(
+                        onSwitchView = {},
+                        viewModel = jobViewModel
+                    )
+                    1 -> SavedScreen(
+                        onSwitchView = {},
+                        viewModel = jobViewModel
+                    )
+                    2 -> SearchScreen(
+                        onBackClick = { selectedTab = 0 },
+                        onSwitchView = {},
+                        viewModel = jobViewModel
+                    )
+                    3 -> ProfileScreen(
+                        onLogout = onLogout,
+                        onNavigateToEditProfile = onNavigateToEditProfile,
+                        onNavigateToNotifications = onNavigateToNotifications,
+                        onNavigateToSecurity = onNavigateToSecurity,
+                        onNavigateToAbout = onNavigateToAbout,
+                        isOwnerView = false,
+                        onSwitchView = {}
+                    )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun PremiumBottomNavigationBar(
+    isOwner: Boolean,
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
+    onNavigateToPostJob: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(100.dp),
+        color = Color.Transparent
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
+        ) {
+            // Main navigation container
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(68.dp)
+                    .align(Alignment.Center),
+                shape = RoundedCornerShape(34.dp),
+                color = Color.White,
+                shadowElevation = 16.dp,
+                tonalElevation = 3.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isOwner) {
+                        // Owner navigation items
+                        PremiumNavItem(
+                            icon = Icons.Default.Work,
+                            label = "My Jobs",
+                            selected = selectedTab == 0,
+                            onClick = { onTabSelected(0) }
+                        )
+
+                        // Center spacer for FAB
+                        Spacer(modifier = Modifier.width(72.dp))
+
+                        PremiumNavItem(
+                            icon = Icons.Default.Person,
+                            label = "Profile",
+                            selected = selectedTab == 1,
+                            onClick = { onTabSelected(1) }
+                        )
+                    } else {
+                        // Student navigation items
+                        PremiumNavItem(
+                            icon = Icons.Default.Home,
+                            label = "Home",
+                            selected = selectedTab == 0,
+                            onClick = { onTabSelected(0) }
+                        )
+
+                        PremiumNavItem(
+                            icon = Icons.Default.Bookmark,
+                            label = "Saved",
+                            selected = selectedTab == 1,
+                            onClick = { onTabSelected(1) }
+                        )
+
+                        PremiumNavItem(
+                            icon = Icons.Default.Search,
+                            label = "Search",
+                            selected = selectedTab == 2,
+                            onClick = { onTabSelected(2) }
+                        )
+
+                        PremiumNavItem(
+                            icon = Icons.Default.Person,
+                            label = "Profile",
+                            selected = selectedTab == 3,
+                            onClick = { onTabSelected(3) }
+                        )
+                    }
+                }
+            }
+
+            // Floating Action Button (Owner only)
+            if (isOwner) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .offset(y = (-16).dp)
+                ) {
+                    PremiumFloatingActionButton(
+                        onClick = onNavigateToPostJob
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PremiumNavItem(
+    icon: ImageVector,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.08f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "navItemScale"
+    )
+
+    val iconSize by animateDpAsState(
+        targetValue = if (selected) 26.dp else 22.dp,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "iconSize"
+    )
+
+    Column(
+        modifier = Modifier
+            .scale(scale)
+            .clickable(
+                onClick = onClick,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            )
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        // Icon container
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(
+                    if (selected) {
+                        Brush.linearGradient(
+                            colors = listOf(PrimaryBlue, AccentPurple)
+                        )
+                    } else {
+                        Brush.linearGradient(
+                            colors = listOf(Color.Transparent, Color.Transparent)
+                        )
+                    }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = if (selected) Color.White else InactiveGray,
+                modifier = Modifier.size(iconSize)
+            )
+        }
+
+        // Label (always visible, changes color based on selection)
+        Text(
+            text = label,
+            fontSize = if (selected) 11.sp else 10.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            color = if (selected) PrimaryBlue else InactiveGray
+        )
+
+        // Active indicator dot
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .size(5.dp)
+                    .clip(CircleShape)
+                    .background(AccentGreen)
+            )
+        } else {
+            Spacer(modifier = Modifier.height(5.dp))
+        }
+    }
+}
+
+@Composable
+fun PremiumFloatingActionButton(
+    onClick: () -> Unit
+) {
+    var pressed by remember { mutableStateOf(false) }
+
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.90f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessHigh
+        ),
+        label = "fabScale"
+    )
+
+    val rotation by rememberInfiniteTransition(label = "rotate").animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(20000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rotation"
+    )
+
+    Box(
+        modifier = Modifier
+            .scale(scale)
+            .size(64.dp)
+            .shadow(
+                elevation = 12.dp,
+                shape = CircleShape,
+                ambientColor = PrimaryBlue.copy(alpha = 0.3f),
+                spotColor = AccentPurple.copy(alpha = 0.3f)
+            )
+    ) {
+        // Rotating gradient background
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(CircleShape)
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            PrimaryBlue,
+                            LightBlue,
+                            AccentPurple
+                        )
+                    )
+                )
+                .clickable(
+                    onClick = {
+                        pressed = true
+                        onClick()
+                    },
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Post Job",
+                tint = Color.White,
+                modifier = Modifier.size(30.dp)
+            )
+        }
+
+        // Subtle pulse ring effect
+        val pulseScale by rememberInfiniteTransition(label = "pulse").animateFloat(
+            initialValue = 1f,
+            targetValue = 1.15f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1500, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulseScale"
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .scale(pulseScale)
+                .clip(CircleShape)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            PrimaryBlue.copy(alpha = 0.3f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+    }
+
+    LaunchedEffect(pressed) {
+        if (pressed) {
+            kotlinx.coroutines.delay(100)
+            pressed = false
         }
     }
 }

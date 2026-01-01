@@ -22,6 +22,8 @@ data class Job(
     val requiredPersons: Int = 1,
     val genderPreference: String = "Any",
     val ageLimit: String? = null,
+    val boysCount: Int? = null,
+    val girlsCount: Int? = null,
 
     // Owner information
     val ownerId: String = "",

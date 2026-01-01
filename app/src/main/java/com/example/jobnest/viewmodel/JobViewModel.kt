@@ -3,6 +3,7 @@ package com.example.jobnest.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.jobnest.data.Job
+import com.example.jobnest.repository.JobRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -22,6 +23,7 @@ data class JobState(
 class JobViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private val repository = JobRepository()
 
     private val _jobState = MutableStateFlow(JobState())
     val jobState: StateFlow<JobState> = _jobState
@@ -117,6 +119,8 @@ class JobViewModel : ViewModel() {
                     "workTime" to job.workTime,
                     "requiredPersons" to job.requiredPersons,
                     "genderPreference" to job.genderPreference,
+                    "boysCount" to job.boysCount,
+                    "girlsCount" to job.girlsCount,
                     "ageLimit" to job.ageLimit,
                     "ownerId" to userId,
                     "ownerName" to job.ownerName,
@@ -276,6 +280,37 @@ class JobViewModel : ViewModel() {
 
     fun clearError() {
         _jobState.value = _jobState.value.copy(error = null)
+    }
+
+    fun deleteJob(jobId: String, onSuccess: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            val userId = auth.currentUser?.uid
+            if (userId == null) {
+                _jobState.value = _jobState.value.copy(error = "User not logged in")
+                return@launch
+            }
+
+            _jobState.value = _jobState.value.copy(isLoading = true, error = null)
+            try {
+                val result = repository.deleteJob(jobId)
+                if (result.isSuccess) {
+                    // Refresh my jobs list
+                    loadMyJobs()
+                    _jobState.value = _jobState.value.copy(isLoading = false)
+                    onSuccess?.invoke()
+                } else {
+                    _jobState.value = _jobState.value.copy(
+                        isLoading = false,
+                        error = result.exceptionOrNull()?.message ?: "Failed to delete job"
+                    )
+                }
+            } catch (e: Exception) {
+                _jobState.value = _jobState.value.copy(
+                    isLoading = false,
+                    error = "Failed to delete job: ${e.message}"
+                )
+            }
+        }
     }
 
     override fun onCleared() {

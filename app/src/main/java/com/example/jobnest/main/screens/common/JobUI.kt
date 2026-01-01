@@ -21,5 +21,8 @@ data class JobUI(
     val isBookmarked: Boolean = false,
     val phoneNumber: String,
     val postedBy: String = "Anonymous",
-    val postedAt: Long = System.currentTimeMillis()
+    val postedAt: Long = System.currentTimeMillis(),
+    val boysCount: Int? = null,
+    val girlsCount: Int? = null,
+    val minSalary: String
 )

@@ -18,6 +18,9 @@ fun Job.toUIJob(isBookmarked: Boolean = false): JobUI {
         workType = this.workType,
         workTime = this.workTime,
         food = this.food,
+        // ADD THIS LINE:
+        minSalary = this.minSalary.toString(),
+
         phoneNumber = contactNumber,
         transport = this.transport,
         description = this.description,
@@ -27,6 +30,8 @@ fun Job.toUIJob(isBookmarked: Boolean = false): JobUI {
         contactNumber = this.contactNumber,
         isBookmarked = isBookmarked,
         postedBy = this.ownerName.takeIf { it.isNotBlank() } ?: "Anonymous",
-        postedAt = this.getCreatedAtLong() // Use the helper method instead of direct postedAt
+        postedAt = this.getCreatedAtLong(), // Use the helper method instead of direct postedAt
+        boysCount = this.boysCount,
+        girlsCount = this.girlsCount
     )
 }

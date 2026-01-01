@@ -84,7 +84,12 @@ fun StudentMainScreen(
             composable("search") {
                 SearchScreen(
                     onBackClick = {
-                        navController.popBackStack()
+                        // Navigate explicitly to home to ensure back always goes to HomeScreen
+                        navController.navigate("home") {
+                            launchSingleTop = true
+                            restoreState = true
+                            popUpTo("home") { saveState = true }
+                        }
                     },
                     onSwitchView = { /* Student view - no switching */ },
                     viewModel = jobViewModel
