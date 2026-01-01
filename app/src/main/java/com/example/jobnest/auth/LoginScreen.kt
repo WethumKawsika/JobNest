@@ -1,165 +1,347 @@
-
 package com.example.jobnest.auth
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-// Replaced your imports with standard android ones for the preview to work
-// Make sure to use your actual project resource import
-// import com.example.jobnest.R
+import com.example.jobnest.R
+import com.example.jobnest.viewmodel.AuthViewModel
 
-// --- Professional Color Palette Definition (Local for preview stability) ---
-private val BrandBlue = Color(0xFF1976D2)
-private val DarkBrandBlue = Color(0xFF0D47A1)
-private val LightBackgroundBlue = Color(0xFFE3F2FD)
-private val InputGray = Color(0xFFF5F5F5)
-private val TextGray = Color(0xFF757575)
-// --------------------------------------------------------------------------
+private val PrimaryBlue = Color(0xFF2E5BFF)
+private val SecondaryPurple = Color(0xFF8E44AD)
+private val AccentPink = Color(0xFFFF6B9D)
+private val LightBlue = Color(0xFF667EEA)
 
 @Composable
-fun LoginScreen(onSignUpClicked: () -> Unit = {}, onLoginSuccess: () -> Unit = {}) {
+fun LoginScreen(
+    onSignUpClicked: () -> Unit,
+    onStudentLoginSuccess: () -> Unit,
+    onOwnerLoginSuccess: () -> Unit,
+    onForgotPasswordClicked: () -> Unit,
+    onGoogleSignInClicked: () -> Unit,
+    viewModel: AuthViewModel
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+    var showRoleDialog by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
+    val authState by viewModel.authState.collectAsState()
 
-    // A diagonal gradient looks more dynamic and premium
-    val backgroundBrush = Brush.linearGradient(
-        colors = listOf(LightBackgroundBlue, DarkBrandBlue),
-        start = Offset(0f, 0f),
-        end = Offset(1000f, 1000f)
+    // Handle navigation after successful authentication
+    LaunchedEffect(authState.isAuthenticated, authState.currentUserData?.userType) {
+        if (authState.isAuthenticated) {
+            val userData = authState.currentUserData
+            if (userData == null) {
+                // Authenticated but profile not fetched yet - allow entry (default to student)
+                onStudentLoginSuccess()
+            } else {
+                val userType = userData.userType
+                if (userType == null) {
+                    // New Google user without role - show dialog
+                    showRoleDialog = true
+                } else {
+                    // Existing user with role - navigate directly
+                    when (userType) {
+                        "student" -> onStudentLoginSuccess()
+                        "owner" -> onOwnerLoginSuccess()
+                        else -> onStudentLoginSuccess()
+                    }
+                }
+            }
+        }
+    }
+
+    // Role selection dialog for new Google users
+    if (showRoleDialog) {
+        RoleSelectionDialog(
+            onDismiss = {
+                showRoleDialog = false
+                viewModel.signOut()
+            },
+            onRoleSelected = { role ->
+                showRoleDialog = false
+                viewModel.updateUserRole(role)
+
+                // Navigate based on selected role
+                when (role) {
+                    "student" -> onStudentLoginSuccess()
+                    "owner" -> onOwnerLoginSuccess()
+                }
+            }
+        )
+    }
+
+    // Animated floating effect
+    val infiniteTransition = rememberInfiniteTransition(label = "float")
+    val floatY by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 20f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "floatY"
+    )
+
+    val logoPulse by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "logoPulse"
     )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(brush = backgroundBrush)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF667EEA),
+                        Color(0xFF764BA2),
+                        Color(0xFF667EEA)
+                    )
+                )
+            )
     ) {
+        // Floating decorative circles
+        Box(
+            modifier = Modifier
+                .offset(x = (-50).dp, y = 100.dp + floatY.dp)
+                .size(200.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.1f))
+                .blur(50.dp)
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = 50.dp, y = (-50).dp - floatY.dp)
+                .size(250.dp)
+                .clip(CircleShape)
+                .background(AccentPink.copy(alpha = 0.2f))
+                .blur(60.dp)
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp)
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .verticalScroll(scrollState)
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Logo Section
-            Spacer(modifier = Modifier.height(48.dp))
-            Image(
-                // Replaced R.drawable.ic_launcher_foreground with a standard icon for preview
-                imageVector = Icons.Outlined.AccountCircle,
-                contentDescription = "JobNest Logo",
-                // Tinting the logo white helps it blend with the dark top gradient
-                colorFilter = ColorFilter.tint(Color.White),
-                modifier = Modifier.size(100.dp)
-            )
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(60.dp))
 
-            // Header Text
+            Image(
+                painter = painterResource(id = R.drawable.jobnest_logo),
+                contentDescription = "JobNest Logo",
+                modifier = Modifier
+                    .size(140.dp)
+                    .scale(logoPulse),
+                contentScale = ContentScale.Fit
+            )
+
+            Spacer(modifier = Modifier.height(3.dp))
+
             Text(
                 text = "Welcome Back!",
-                fontSize = 32.sp,
+                fontSize = 36.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
-                letterSpacing = 1.sp
+                letterSpacing = 0.5.sp
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Sign in to continue your career journey.",
-                fontSize = 16.sp,
-                color = Color.White.copy(alpha = 0.8f),
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(40.dp))
 
-            // Login Form Card
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Sign in to explore amazing opportunities",
+                fontSize = 15.sp,
+                color = Color.White.copy(alpha = 0.9f),
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Medium
+            )
+
+            Spacer(modifier = Modifier.height(30.dp))
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp), // Softer, modern corners
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
-                border = BorderStroke(1.dp, Color(0xFFE0E0E0)) // Subtle border definition
+                shape = RoundedCornerShape(32.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White.copy(alpha = 0.85f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 24.dp)
             ) {
-                Column(modifier = Modifier.padding(28.dp)) {
-                    // Custom styling for TextFields for a cleaner look
-                    val textFieldColors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = BrandBlue,
-                        unfocusedBorderColor = Color.LightGray,
-                        focusedLabelColor = BrandBlue,
-                        unfocusedContainerColor = InputGray.copy(alpha = 0.5f),
-                        focusedContainerColor = Color.White
+                Column(
+                    modifier = Modifier.padding(10.dp)
+                ) {
+                    // Google Sign In Button
+                    OutlinedButton(
+                        onClick = onGoogleSignInClicked,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFFE2E8F0)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White,
+                            contentColor = Color(0xFF2D3748)
+                        )
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.google_logo),
+                                contentDescription = "Google Logo",
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(20.dp))
+                            Text(
+                                "Continue with Google",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF2D3748)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // OR Divider
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Divider(
+                            modifier = Modifier.weight(1f),
+                            color = Color(0xFFE2E8F0),
+                            thickness = 1.dp
+                        )
+                        Text(
+                            text = "OR",
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF6B7280)
+                        )
+                        Divider(
+                            modifier = Modifier.weight(1f),
+                            color = Color(0xFFE2E8F0),
+                            thickness = 1.dp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Email Field
+                    Text(
+                        text = "Email",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2D3748),
+                        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
                     )
 
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
-                        label = { Text("Email address") },
-                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = TextGray) },
+                        placeholder = { Text("Enter your email", color = Color.Gray) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Email,
+                                contentDescription = null,
+                                tint = PrimaryBlue
+                            )
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         shape = RoundedCornerShape(16.dp),
-                        colors = textFieldColors,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryBlue,
+                            unfocusedBorderColor = Color(0xFFE2E8F0),
+                            focusedContainerColor = Color(0xFFF7FAFC),
+                            unfocusedContainerColor = Color(0xFFF7FAFC),
+                            cursorColor = PrimaryBlue
+                        ),
                         singleLine = true
                     )
-                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Password Field
+                    Text(
+                        text = "Password",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2D3748),
+                        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                    )
+
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it },
-                        label = { Text("Password") },
-                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = TextGray) },
+                        placeholder = { Text("Enter your password", color = Color.Gray) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = PrimaryBlue
+                            )
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                                    tint = Color.Gray
+                                )
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth(),
-                        visualTransformation = PasswordVisualTransformation(),
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         shape = RoundedCornerShape(16.dp),
-                        colors = textFieldColors,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryBlue,
+                            unfocusedBorderColor = Color(0xFFE2E8F0),
+                            focusedContainerColor = Color(0xFFF7FAFC),
+                            unfocusedContainerColor = Color(0xFFF7FAFC),
+                            cursorColor = PrimaryBlue
+                        ),
                         singleLine = true
                     )
 
@@ -168,87 +350,105 @@ fun LoginScreen(onSignUpClicked: () -> Unit = {}, onLoginSuccess: () -> Unit = {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        TextButton(onClick = { /* TODO */ }, contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)) {
-                            Text("Forgot password?", color = BrandBlue, fontWeight = FontWeight.Medium)
+                        TextButton(
+                            onClick = onForgotPasswordClicked,
+                            contentPadding = PaddingValues(vertical = 8.dp)
+                        ) {
+                            Text(
+                                "Forgot password?",
+                                color = PrimaryBlue,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp
+                            )
                         }
                     }
-                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Error message
+                    authState.error?.let { error ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = error,
+                            color = Color.Red,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     // Sign In Button
                     Button(
-                        onClick = onLoginSuccess,
+                        onClick = {
+                            if (email.isNotBlank() && password.isNotBlank()) {
+                                viewModel.signInWithEmail(email, password)
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
+                        enabled = !authState.isLoading,
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = BrandBlue),
-                        elevation = ButtonDefaults.buttonElevation(8.dp)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Transparent
+                        ),
+                        contentPadding = PaddingValues(0.dp),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 8.dp,
+                            pressedElevation = 12.dp
+                        )
                     ) {
-                        Text("Sign In", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(PrimaryBlue, LightBlue)
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                if (authState.isLoading) "Signing In..." else "Sign In",
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Sign Up
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Don't have an account?",
+                            color = Color(0xFF4A5568),
+                            fontSize = 14.sp
+                        )
+                        TextButton(
+                            onClick = onSignUpClicked,
+                            contentPadding = PaddingValues(start = 4.dp)
+                        ) {
+                            Text(
+                                "Sign Up",
+                                color = PrimaryBlue,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
             }
 
-            // Social Login Divider
-            Spacer(modifier = Modifier.height(32.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Spacer(modifier = Modifier.height(1.dp).background(Color.White.copy(0.3f)).weight(1f))
-                Text(
-                    text = "  or continue with  ",
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 14.sp
-                )
-                Spacer(modifier = Modifier.height(1.dp).background(Color.White.copy(0.3f)).weight(1f))
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Professional Google Button
-            Button(
-                onClick = { /* TODO */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color.DarkGray
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
-                border = BorderStroke(1.dp, Color(0xFFE0E0E0))
-            ) {
-                // placeholder for Google Icon. Use an SVG resource in real app: painterResource(id = R.drawable.ic_google)
-                Icon(
-                    imageVector = Icons.Default.Email, // TEMP ICON
-                    contentDescription = "Google Logo",
-                    tint = Color.Unspecified, // Important for SVG color to show
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Continue with Google",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-
-            // Footer
-            Spacer(modifier = Modifier.height(32.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("New to JobNest?", color = Color.White.copy(alpha = 0.8f))
-                TextButton(onClick = onSignUpClicked) {
-                    Text("Create an account", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
-                }
-            }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(22.dp))
         }
-    }
-}
-
-
-@Preview(showBackground = true, device = "id:pixel_6_pro")
-@Composable
-fun LoginScreenPreviewProfessional() {
-    MaterialTheme {
-        LoginScreen()
     }
 }
