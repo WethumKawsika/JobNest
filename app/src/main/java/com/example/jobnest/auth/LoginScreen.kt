@@ -162,28 +162,28 @@ fun LoginScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(60.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
             Image(
                 painter = painterResource(id = R.drawable.jobnest_logo),
                 contentDescription = "JobNest Logo",
                 modifier = Modifier
-                    .size(140.dp)
+                    .size(120.dp)
                     .scale(logoPulse),
                 contentScale = ContentScale.Fit
             )
 
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "Welcome Back!",
-                fontSize = 36.sp,
+                fontSize = 32.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
                 letterSpacing = 0.5.sp
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "Sign in to explore amazing opportunities",
@@ -193,18 +193,18 @@ fun LoginScreen(
                 fontWeight = FontWeight.Medium
             )
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(32.dp),
+                shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color.White.copy(alpha = 0.85f)
+                    containerColor = Color.White.copy(alpha = 0.95f)
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 24.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 20.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(10.dp)
+                    modifier = Modifier.padding(24.dp)
                 ) {
                     // Google Sign In Button
                     OutlinedButton(
@@ -229,7 +229,7 @@ fun LoginScreen(
                                 contentDescription = "Google Logo",
                                 modifier = Modifier.size(24.dp)
                             )
-                            Spacer(modifier = Modifier.width(20.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 "Continue with Google",
                                 fontSize = 16.sp,
@@ -239,7 +239,7 @@ fun LoginScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     // OR Divider
                     Row(
@@ -265,7 +265,7 @@ fun LoginScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     // Email Field
                     Text(
@@ -300,7 +300,7 @@ fun LoginScreen(
                         singleLine = true
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     // Password Field
                     Text(
@@ -345,6 +345,8 @@ fun LoginScreen(
                         singleLine = true
                     )
 
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     // Forgot Password
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -352,7 +354,7 @@ fun LoginScreen(
                     ) {
                         TextButton(
                             onClick = onForgotPasswordClicked,
-                            contentPadding = PaddingValues(vertical = 8.dp)
+                            contentPadding = PaddingValues(vertical = 4.dp)
                         ) {
                             Text(
                                 "Forgot password?",
@@ -363,20 +365,18 @@ fun LoginScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-
                     // Error message
                     authState.error?.let { error ->
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = error,
                             color = Color.Red,
-                            fontSize = 12.sp,
+                            fontSize = 13.sp,
                             modifier = Modifier.padding(horizontal = 4.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     // Sign In Button
                     Button(
@@ -418,7 +418,7 @@ fun LoginScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     // Sign Up
                     Row(
@@ -443,12 +443,10 @@ fun LoginScreen(
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(10.dp))
                 }
             }
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
