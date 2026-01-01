@@ -527,7 +527,9 @@ fun EnhancedTextField(
                 focusedContainerColor = Color(0xFFF7FAFC),
                 unfocusedContainerColor = Color(0xFFF7FAFC),
                 cursorColor = PrimaryBlue,
-                errorBorderColor = ErrorRed
+                errorBorderColor = ErrorRed,
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
             ),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             visualTransformation = if (isPassword && !passwordVisible)
@@ -543,7 +545,10 @@ fun EnhancedTextField(
                     }
                 }
             } else null,
-            textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
+            textStyle = LocalTextStyle.current.copy(
+                fontSize = 15.sp,
+                color = Color.Black
+            ),
             singleLine = true,
             isError = isError
         )

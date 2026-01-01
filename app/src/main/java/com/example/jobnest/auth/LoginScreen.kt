@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -295,7 +296,13 @@ fun LoginScreen(
                             unfocusedBorderColor = Color(0xFFE2E8F0),
                             focusedContainerColor = Color(0xFFF7FAFC),
                             unfocusedContainerColor = Color(0xFFF7FAFC),
-                            cursorColor = PrimaryBlue
+                            cursorColor = PrimaryBlue,
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black
+                        ),
+                        textStyle = TextStyle(
+                            color = Color.Black,
+                            fontSize = 16.sp
                         ),
                         singleLine = true
                     )
@@ -340,7 +347,13 @@ fun LoginScreen(
                             unfocusedBorderColor = Color(0xFFE2E8F0),
                             focusedContainerColor = Color(0xFFF7FAFC),
                             unfocusedContainerColor = Color(0xFFF7FAFC),
-                            cursorColor = PrimaryBlue
+                            cursorColor = PrimaryBlue,
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black
+                        ),
+                        textStyle = TextStyle(
+                            color = Color.Black,
+                            fontSize = 16.sp
                         ),
                         singleLine = true
                     )

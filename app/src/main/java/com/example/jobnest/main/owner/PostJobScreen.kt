@@ -346,7 +346,11 @@ fun PostJobScreen(
                                         cursorColor = PrimaryBlue
                                     ),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    textStyle = LocalTextStyle.current.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
+                                    textStyle = LocalTextStyle.current.copy(
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.Black
+                                    ),
                                     singleLine = true
                                 )
                                 OutlinedTextField(
@@ -364,7 +368,11 @@ fun PostJobScreen(
                                         cursorColor = PrimaryBlue
                                     ),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    textStyle = LocalTextStyle.current.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
+                                    textStyle = LocalTextStyle.current.copy(
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.Black
+                                    ),
                                     singleLine = true
                                 )
                             }
@@ -428,7 +436,10 @@ fun PostJobScreen(
                                             cursorColor = PrimaryBlue
                                         ),
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
+                                        textStyle = LocalTextStyle.current.copy(
+                                            fontSize = 15.sp,
+                                            color = Color.Black
+                                        ),
                                         singleLine = true
                                     )
                                     Spacer(modifier = Modifier.height(10.dp))
@@ -447,7 +458,10 @@ fun PostJobScreen(
                                             cursorColor = PrimaryBlue
                                         ),
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
+                                        textStyle = LocalTextStyle.current.copy(
+                                            fontSize = 15.sp,
+                                            color = Color.Black
+                                        ),
                                         singleLine = true
                                     )
                                 } else {
@@ -466,7 +480,10 @@ fun PostJobScreen(
                                             cursorColor = PrimaryBlue
                                         ),
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
+                                        textStyle = LocalTextStyle.current.copy(
+                                            fontSize = 15.sp,
+                                            color = Color.Black
+                                        ),
                                         singleLine = true
                                     )
                                 }
@@ -506,7 +523,11 @@ fun PostJobScreen(
                                     unfocusedContainerColor = Color(0xFFF7FAFC),
                                     cursorColor = PrimaryBlue
                                 ),
-                                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp, lineHeight = 22.sp),
+                                textStyle = LocalTextStyle.current.copy(
+                                    fontSize = 14.sp,
+                                    lineHeight = 22.sp,
+                                    color = Color.Black
+                                ),
                                 maxLines = 6
                             )
                         }
@@ -780,7 +801,10 @@ fun JobInputField(
                 cursorColor = PrimaryBlue
             ),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
+            textStyle = LocalTextStyle.current.copy(
+                fontSize = 15.sp,
+                color = Color.Black
+            ),
             singleLine = true
         )
     }
@@ -868,7 +892,10 @@ fun DropdownField(
                     focusedContainerColor = Color(0xFFF7FAFC),
                     unfocusedContainerColor = Color(0xFFF7FAFC)
                 ),
-                textStyle = LocalTextStyle.current.copy(fontSize = 15.sp)
+                textStyle = LocalTextStyle.current.copy(
+                    fontSize = 15.sp,
+                    color = Color.Black
+                )
             )
             ExposedDropdownMenu(
                 expanded = expanded,
@@ -939,11 +966,14 @@ private fun LocationInputField(location: String, onOpenMapPicker: () -> Unit) {
                 unfocusedBorderColor = Color(0xFFE2E8F0),
                 focusedContainerColor = Color(0xFFF7FAFC),
                 unfocusedContainerColor = Color(0xFFF7FAFC),
-                disabledTextColor = DarkText,
+                disabledTextColor = Color.Black,
                 disabledBorderColor = Color(0xFFE2E8F0),
                 disabledContainerColor = Color(0xFFF7FAFC)
             ),
-            textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
+            textStyle = LocalTextStyle.current.copy(
+                fontSize = 15.sp,
+                color = Color.Black
+            ),
             singleLine = true
         )
         if (location.isNotBlank()) {
